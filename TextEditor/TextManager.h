@@ -12,7 +12,7 @@ private:
     
 public:
     TextManager();
-    // TextManager(const std::string& content);
+    TextManager(const std::string& data);
     // ~TextManager();
     
     // void setTextData(const std::string& content);
