@@ -6,7 +6,7 @@ namespace TextManagerTest
 
 void defaultContructorTest()
 {
-    TextManager textManager;
+    TextEditorCore::TextManager textManager;
     const std::string& text = textManager.getTextData();
     ASSERT(text.empty());
 }

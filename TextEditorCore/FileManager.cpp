@@ -7,6 +7,8 @@
 #include <iostream>
 #include <fstream>
 
+namespace TextEditorCore
+{
 
 struct FileManager::PImpl
 {
@@ -87,3 +89,5 @@ void FileManager::saveFile(
 {
     
 }
+
+}// namespace TextEditorCore

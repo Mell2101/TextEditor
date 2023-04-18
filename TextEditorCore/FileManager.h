@@ -5,6 +5,9 @@
 
 /* -------------------------------------------------------------------------- */
 
+namespace TextEditorCore
+{
+
 class FileManager //Signleton
 {
 private:
@@ -33,3 +36,5 @@ public:
     //save file
     //save file
 };
+
+}// namespace TextEditorCore

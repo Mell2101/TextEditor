@@ -5,6 +5,9 @@
 
 // =============================================================================
 
+namespace TextEditorCore
+{
+
 class TextManager
 {
 private:
@@ -27,3 +30,5 @@ public:
     // void eraseSegment(const std::pair<size_t, size_t>& segment);
     // void insertSegment(const std::string& segmentData, const size_t pos);
 };
+
+}// namespace TextEditorCore
