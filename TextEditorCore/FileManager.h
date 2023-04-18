@@ -37,4 +37,4 @@ public:
     //save file
 };
 
-}
+}// namespace TextEditorCore

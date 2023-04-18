@@ -12,4 +12,4 @@ TextManager::TextManager(const std::string& data) : data(data)
     
 }
 
-}
+}// namespace TextEditorCore

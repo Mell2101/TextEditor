@@ -90,4 +90,4 @@ void FileManager::saveFile(
     
 }
 
-}
+}// namespace TextEditorCore

@@ -31,4 +31,4 @@ public:
     // void insertSegment(const std::string& segmentData, const size_t pos);
 };
 
-}
+}// namespace TextEditorCore
