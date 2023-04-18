@@ -11,4 +11,11 @@ void defaultContructorTest()
     ASSERT(text.empty());
 }
 
+void stringContructorTest()
+{
+    TextEditorCore::TextManager textManager("njnj");
+    const std::string& text = textManager.getTextData();
+    ASSERT(text == "njnj" );
 }
+
+} //namespace TextManagerTest
