@@ -1,12 +1,11 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "customtextedit.h"
-#include "QMenu"
-#include "QFontDialog"
-#include "QStyle"
-#include "QAction"
+#include <QMenu>
+#include <QFontDialog>
+#include <QStyle>
+#include <QAction>
 #include <QLabel>
-#include <QMouseEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

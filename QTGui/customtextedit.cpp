@@ -1,7 +1,6 @@
 #include "customtextedit.h"
 #include <QMenu>
 #include <QContextMenuEvent>
-#include <QLabel>
 
 CustomTextEdit::CustomTextEdit(QWidget* parent) : QTextEdit(parent)
 {
