@@ -1,5 +1,4 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 
@@ -15,7 +14,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+public slots:
+    void OpenFontDialog();
+//    void NewFile();
+//    void OpenFile();
+//    void SaveFile();
+//    void ExitProgramm();
+
 private:
     Ui::MainWindow *ui;
+    class CustomTextEdit* TextArea;
 };
-#endif // MAINWINDOW_H
