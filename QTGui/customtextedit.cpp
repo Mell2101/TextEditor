@@ -18,8 +18,3 @@ void CustomTextEdit::contextMenuEvent(QContextMenuEvent *event)
 {
     contextMenu->exec(event->globalPos());
 }
-
-void CustomTextEdit::mouseMoveEvent(QMouseEvent *event)
-{
-    emit mouseMoved(event->pos().x(), event->pos().y());
-}

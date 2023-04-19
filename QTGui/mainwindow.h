@@ -16,7 +16,7 @@ public:
 
 public slots:
     void OpenFontDialog();
-    void updateMousePosInfo(int x, int y);
+    void updateCursorPosInfo();
 //    void NewFile();
 //    void OpenFile();
 //    void SaveFile();
@@ -25,5 +25,5 @@ public slots:
 private:
     Ui::MainWindow *ui;
     class CustomTextEdit* TextArea;
-    class QLabel* MousePosInfo;
+    class QLabel* CursorPosInfo;
 };

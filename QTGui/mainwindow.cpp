@@ -46,8 +46,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(editMenu->addAction(tr("Paste"), QKeySequence(tr("Ctrl+V"))), &QAction::triggered, TextArea, &CustomTextEdit::paste);
     connect(editMenu->addAction(tr("Fonts..."), QKeySequence(tr("Ctrl+Shift+F"))), &QAction::triggered, this, &MainWindow::OpenFontDialog);
 
-    statusBar()->addWidget(MousePosInfo = new QLabel(this));
-    connect(TextArea, &CustomTextEdit::mouseMoved, this, &MainWindow::updateMousePosInfo);
+    statusBar()->addWidget(CursorPosInfo = new QLabel(this));
+    connect(TextArea, &CustomTextEdit::cursorPositionChanged, this, &MainWindow::updateCursorPosInfo);
+
+    emit TextArea->cursorPositionChanged();
 }
 
 MainWindow::~MainWindow()
@@ -63,7 +65,9 @@ void MainWindow::OpenFontDialog()
     fontDialog.getFont(&accept);
 }
 
-void MainWindow::updateMousePosInfo(int x, int y)
+void MainWindow::updateCursorPosInfo()
 {
-    MousePosInfo->setText(QString("%1; %2").arg(x).arg(y));
+    int line = TextArea->textCursor().blockNumber();
+    int column = TextArea->textCursor().positionInBlock();
+    CursorPosInfo->setText(QString("Line: %1, column: %2").arg(line).arg(column));
 }
