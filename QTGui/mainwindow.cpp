@@ -5,6 +5,8 @@
 #include "QFontDialog"
 #include "QStyle"
 #include "QAction"
+#include <QLabel>
+#include <QMouseEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -43,6 +45,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(editMenu->addAction(tr("Copy"), QKeySequence(tr("Ctrl+C"))), &QAction::triggered, TextArea, &CustomTextEdit::copy);
     connect(editMenu->addAction(tr("Paste"), QKeySequence(tr("Ctrl+V"))), &QAction::triggered, TextArea, &CustomTextEdit::paste);
     connect(editMenu->addAction(tr("Fonts..."), QKeySequence(tr("Ctrl+Shift+F"))), &QAction::triggered, this, &MainWindow::OpenFontDialog);
+
+    statusBar()->addWidget(MousePosInfo = new QLabel(this));
+    connect(TextArea, &CustomTextEdit::mouseMoved, this, &MainWindow::updateMousePosInfo);
 }
 
 MainWindow::~MainWindow()
@@ -56,4 +61,9 @@ void MainWindow::OpenFontDialog()
     QFontDialog fontDialog(this);
     bool accept;
     fontDialog.getFont(&accept);
+}
+
+void MainWindow::updateMousePosInfo(int x, int y)
+{
+    MousePosInfo->setText(QString("%1; %2").arg(x).arg(y));
 }

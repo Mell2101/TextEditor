@@ -1,6 +1,7 @@
 #include "customtextedit.h"
 #include <QMenu>
 #include <QContextMenuEvent>
+#include <QLabel>
 
 CustomTextEdit::CustomTextEdit(QWidget* parent) : QTextEdit(parent)
 {
@@ -16,4 +17,9 @@ CustomTextEdit::CustomTextEdit(QWidget* parent) : QTextEdit(parent)
 void CustomTextEdit::contextMenuEvent(QContextMenuEvent *event)
 {
     contextMenu->exec(event->globalPos());
+}
+
+void CustomTextEdit::mouseMoveEvent(QMouseEvent *event)
+{
+    emit mouseMoved(event->pos().x(), event->pos().y());
 }
