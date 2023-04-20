@@ -9,7 +9,7 @@ public:
     CustomTextEdit(QWidget* parent);
 
 protected:
-    QMenu* contextMenu;
+    QMenu* m_pContextMenu;
 
 protected:
     void contextMenuEvent(QContextMenuEvent* event) override;
