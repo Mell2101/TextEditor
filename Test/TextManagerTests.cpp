@@ -1,21 +1,19 @@
 #include <TextManager.h>
-#include "TestCommons.h"
+#include <catch2/catch_all.hpp>
 
-namespace TextManagerTest
-{
 
-void defaultContructorTest()
+TEST_CASE("TextManager::TextManager()", "[TextManager::TextManager()]")
 {
     TextEditorCore::TextManager textManager;
     const std::string& text = textManager.getTextData();
-    ASSERT(text.empty());
+    REQUIRE(text.empty());
 }
 
-void stringContructorTest()
+
+TEST_CASE("TextManager::TextManager(str)", "[TextManager::TextManager(str)]")
 {
-    TextEditorCore::TextManager textManager("njnj");
+    TextEditorCore::TextManager textManager("blah blah!");
     const std::string& text = textManager.getTextData();
-    ASSERT(text == "njnj" );
+    REQUIRE(text == "blah blah!");
 }
 
-} //namespace TextManagerTest
