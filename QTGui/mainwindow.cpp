@@ -65,7 +65,7 @@ void MainWindow::exitProgramm()
     exit(0);
 }
 
-void MainWindow::menuInit()
+inline void MainWindow::menuInit()
 {
     QMenu* fileMenu = menuBar()->addMenu(tr("File"));
 
@@ -85,14 +85,14 @@ void MainWindow::menuInit()
     editMenu->addAction(tr("Fonts..."), this, &MainWindow::openFontDialog, QKeySequence(tr("Ctrl+Shift+F")));
 }
 
-void MainWindow::statusBarInit()
+inline void MainWindow::statusBarInit()
 {
     statusBar()->addWidget(m_pTextCursorPosInfo = new QLabel(this));
     connect(m_pTextArea, &CustomTextEdit::cursorPositionChanged, this, &MainWindow::updateTextCursorPosInfo);
     emit m_pTextArea->cursorPositionChanged();
 }
 
-void MainWindow::toolBarInit()
+inline void MainWindow::toolBarInit()
 {
     QToolBar* toolBarFile = addToolBar(tr("File"));
     toolBarFile->addAction(QIcon::fromTheme("document-new"), tr("New"));
