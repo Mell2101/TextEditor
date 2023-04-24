@@ -24,12 +24,12 @@ void TextManager::clean()
 
 std::vector<std::pair<size_t, size_t> > TextManager::find(const std::string &token)
 {
-
+    return std::vector<std::pair<size_t, size_t>> (1, std::pair<size_t, size_t>(0,0));
 }
 
 std::string TextManager::getSegment(const std::pair<size_t, size_t> &segment) const
 {
-
+    return std::string("0");
 }
 
 void TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
