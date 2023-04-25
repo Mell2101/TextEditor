@@ -21,7 +21,9 @@ add_executable(TextEditorCoreTests
     main.cpp
     
     TextManagerTests.cpp
+    FileManagerTests.cpp
 )
+
 
 target_link_libraries(TextEditorCoreTests
     PUBLIC TextEditorCoreLib
