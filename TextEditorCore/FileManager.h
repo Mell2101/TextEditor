@@ -15,7 +15,9 @@ public:
     {
         NoError = 0,
         FileDNExist = 1,
-        FileUnavailable = 2
+        FileUnavailable = 2,
+        FileUnableToOpen = 3,
+        FileWriteError = 4
     };
 
     using StartLoadCallback = std::function<void (const std::string&)>;
@@ -38,9 +40,9 @@ public:
     void loadFile(
         const std::string& filePath,
         std::string& dataBuffer,
-        StartLoadCallback onStartLoadCallback,
-        FinishLoadCallback onFinishLoadCallback,
-        ErrorLoadCallback onErrorLoadCallback
+        StartLoadCallback& onStartLoadCallback,
+        FinishLoadCallback& onFinishLoadCallback,
+        ErrorLoadCallback& onErrorLoadCallback
     );
     
     void stopWork();
@@ -48,9 +50,10 @@ public:
     void saveFile(
         const std::string& filePath,
         const std::string& dataBuffer,
-        StartSaveCallback onStartSaveCallback,
-        FinishSaveCallback onFinishSaveCallback,
-        ErrorLoadCallback onErrorSaveCallback
+        const bool isRewrite,
+        StartSaveCallback& onStartSaveCallback,
+        FinishSaveCallback& onFinishSaveCallback,
+        ErrorLoadCallback& onErrorSaveCallback
     );
     
 };

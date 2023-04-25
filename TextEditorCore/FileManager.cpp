@@ -3,9 +3,9 @@
 
 /* -------------------------------------------------------------------------- */
 //PIMPL
-
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 namespace TextEditorCore
 {
@@ -14,30 +14,31 @@ struct FileManager::PImpl
 {
     void loadFile(const std::string& filePath,
                   std::string& dataBuffer,
-                  StartLoadCallback onStartLoadCallback,
-                  FinishLoadCallback onFinishLoadCallback,
-                  ErrorLoadCallback onErrorLoadCallback);
+                  StartLoadCallback& onStartLoadCallback,
+                  FinishLoadCallback& onFinishLoadCallback,
+                  ErrorLoadCallback& onErrorLoadCallback);
     
     void stopWork();
     
     void saveFile(const std::string& filePath,
                   const std::string& dataBuffer,
-                  StartSaveCallback onStartSaveCallback,
-                  FinishSaveCallback onFinishSaveCallback,
-                  ErrorSaveCallback onErrorSaveCallback);
+                  const bool isRewrite,
+                  StartSaveCallback& onStartSaveCallback,
+                  FinishSaveCallback& onFinishSaveCallback,
+                  ErrorSaveCallback& onErrorSaveCallback);
                   
-    FileManager::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad);
+    FileManager::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad, bool isExist);
     
 };
 
 
 void FileManager::PImpl::loadFile(const std::string& filePath,
                                   std::string& dataBuffer,
-                                  StartLoadCallback onStartLoadCallback,
-                                  FinishLoadCallback onFinishLoadCallback,
-                                  ErrorLoadCallback onErrorLoadCallback)
+                                  StartLoadCallback& onStartLoadCallback,
+                                  FinishLoadCallback& onFinishLoadCallback,
+                                  ErrorLoadCallback& onErrorLoadCallback)
 {
-    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true);
+    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true, true);
     switch (errorCode)
     {
         case FileManager::FileIOErrorsEnum::NoError:
@@ -59,28 +60,44 @@ void FileManager::PImpl::stopWork()
 
 void FileManager::PImpl::saveFile(const std::string& filePath,
                                   const std::string& dataBuffer,
-                                  StartSaveCallback onStartSaveCallback,
-                                  FinishSaveCallback onFinishSaveCallback,
-                                  ErrorSaveCallback onErrorSaveCallback)
+                                  const bool isRewrite,
+                                  StartSaveCallback& onStartSaveCallback,
+                                  FinishSaveCallback& onFinishSaveCallback,
+                                  ErrorSaveCallback& onErrorSaveCallback)
 {
-    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true);
-    switch (errorCode)
-    {
-        case FileManager::FileIOErrorsEnum::NoError:
+//    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true, true);
+
+
             onStartSaveCallback(filePath);
             // Saving file here
+            std::ofstream file;
+            file.open(filePath);
+
+            if (!file.is_open())
+            {
+                if (std::filesystem::exists(filePath))
+                {
+                    onErrorSaveCallback(filePath, FileIOErrorsEnum::FileUnavailable);
+                    return;
+                }
+
+                onErrorSaveCallback(filePath, FileIOErrorsEnum::FileUnableToOpen);
+                return;
+            }
+
+            file << dataBuffer;
+            
+            if (file.fail())
+            {
+                onErrorSaveCallback(filePath, FileIOErrorsEnum::FileWriteError);
+                    return;
+            }
+            
+            
             onFinishSaveCallback(filePath);
-            return;
-        default:
-            onErrorSaveCallback(filePath, errorCode);
-            return;
-    }
 }
 
-FileManager::FileIOErrorsEnum FileManager::PImpl::checkPath(const std::string& filePath, bool isLoad)
-{
-    return FileManager::FileIOErrorsEnum::NoError;
-}
+
 
 
 // --------------------------------------------------------------------------
@@ -98,9 +115,9 @@ FileManager::~FileManager()
 void FileManager::loadFile(
     const std::string& filePath,
     std::string& dataBuffer,
-    StartLoadCallback onStartLoadCallback,
-    FinishLoadCallback onFinishLoadCallback,
-    ErrorLoadCallback onErrorLoadCallback
+    StartLoadCallback& onStartLoadCallback,
+    FinishLoadCallback& onFinishLoadCallback,
+    ErrorLoadCallback& onErrorLoadCallback
 )
 {
     pimpl->loadFile(filePath, dataBuffer, onStartLoadCallback, onFinishLoadCallback, onErrorLoadCallback);
@@ -113,12 +130,13 @@ void FileManager::stopWork()
 
 void FileManager::saveFile(const std::string& filePath,
                            const std::string& dataBuffer,
-                           StartSaveCallback onStartSaveCallback,
-                           FinishSaveCallback onFinishSaveCallback,
-                           ErrorSaveCallback onErrorSaveCallback
+                           const bool isRewrite,
+                           StartSaveCallback& onStartSaveCallback,
+                           FinishSaveCallback& onFinishSaveCallback,
+                           ErrorSaveCallback& onErrorSaveCallback
 )
 {
-    pimpl->saveFile(filePath, dataBuffer, onStartSaveCallback, onFinishSaveCallback, onErrorSaveCallback);
+    pimpl->saveFile(filePath, dataBuffer, isRewrite, onStartSaveCallback, onFinishSaveCallback, onErrorSaveCallback);
 }
 
 }// namespace TextEditorCore
