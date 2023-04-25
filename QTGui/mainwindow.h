@@ -16,6 +16,7 @@ public:
 
 public slots:
     void openFontDialog();
+    void openPrintDocumentDialog();
     void updateTextCursorPosInfo();
     void newFile();
     void openFile();
