@@ -15,15 +15,20 @@ public:
     ~MainWindow();
 
 public slots:
-    void OpenFontDialog();
+    void openFontDialog();
     void updateTextCursorPosInfo();
-//    void NewFile();
-//    void OpenFile();
-//    void SaveFile();
-//    void ExitProgramm();
+    void newFile();
+    void openFile();
+    void saveFile();
+    void exitProgramm();
 
 private:
     Ui::MainWindow *ui;
     class CustomTextEdit* m_pTextArea;
     class QLabel* m_pTextCursorPosInfo;
+
+private:
+    void menuInit();
+    void statusBarInit();
+    void toolBarInit();
 };
