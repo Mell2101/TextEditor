@@ -7,6 +7,7 @@
 #include <QAction>
 #include <QLabel>
 #include <QToolBar>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -95,42 +96,42 @@ inline void MainWindow::statusBarInit()
 inline void MainWindow::toolBarInit()
 {
     QToolBar* toolBarFile = addToolBar(tr("File"));
-    toolBarFile->addAction(QIcon::fromTheme("document-new"), tr("New"));
-    toolBarFile->addAction(QIcon::fromTheme("document-open"), tr("Open"));
-    toolBarFile->addAction(QIcon::fromTheme("document-save"), tr("Save"));
+    toolBarFile->addAction(QIcon("://icons/document-new.svg"), tr("New"));
+    toolBarFile->addAction(QIcon("://icons/document-open.svg"), tr("Open"));
+    toolBarFile->addAction(QIcon("://icons/document-save.svg"), tr("Save"));
 
     QToolBar* toolBarEdit = addToolBar(tr("Edit"));
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-undo"),
+                QIcon("://icons/edit-undo.svg"),
                 tr("Undo"),
                 m_pTextArea,
                 &CustomTextEdit::undo
             );
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-redo"),
+                QIcon("://icons/edit-redo.svg"),
                 tr("Redo"),
                 m_pTextArea,
                 &CustomTextEdit::redo
             );
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-cut"),
+                QIcon("://icons/edit-cut.svg"),
                 tr("Cut"),
                 m_pTextArea,
                 &CustomTextEdit::cut
             );
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-copy"),
+                QIcon("://icons/edit-copy.svg"),
                 tr("Copy"),
                 m_pTextArea,
                 &CustomTextEdit::copy
             );
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-paste"),
+                QIcon("://icons/edit-paste.svg"),
                 tr("Paste"),
                 m_pTextArea,
                 &CustomTextEdit::paste
@@ -138,7 +139,7 @@ inline void MainWindow::toolBarInit()
     toolBarEdit->addSeparator();
     toolBarEdit->addAction
             (
-                QIcon::fromTheme("edit-properties"),
+                QIcon("://icons/applications-fonts.svg"),
                 tr("Fonts..."),
                 this,
                 &MainWindow::openFontDialog

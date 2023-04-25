@@ -34,6 +34,7 @@ set(PROJECT_SOURCES
         mainwindow.ui
         customtextedit.h
         customtextedit.cpp
+        resources.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
