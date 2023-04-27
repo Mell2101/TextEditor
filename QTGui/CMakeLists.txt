@@ -26,6 +26,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS PrintSupport REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -34,6 +35,7 @@ set(PROJECT_SOURCES
         mainwindow.ui
         customtextedit.h
         customtextedit.cpp
+        resources.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -54,5 +56,6 @@ endif()
 
 target_link_libraries(QTGui
     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+    PRIVATE Qt${QT_VERSION_MAJOR}::PrintSupport
     TextEditorCoreLib
 )
