@@ -10,7 +10,7 @@ static bool isFileExist (const std::string& name)
     return f.good();
 }
 
-TEST_CASE("FileManager::loadFile()--errorFileDNExistOnLoadTest", "[FileManager::loadFile()--errorFileDNExistOnLoadTest]")
+TEST_CASE("FileManager::loadFile()--FileDNExist", "[FileManager::loadFile()--FileDNExist]")
 {
     bool isSaveStarted = false;
     std::string initFileName = "errorFileDNExistTest.txt";
@@ -44,7 +44,7 @@ TEST_CASE("FileManager::loadFile()--errorFileDNExistOnLoadTest", "[FileManager::
                         });
 }
 
-TEST_CASE("FileManager::saveFile()--errorFileUnavailableOnSaveTest", "[FileManager::saveFile()--errorFileUnavailableOnSaveTest]")
+TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()--FileUnavailable]")
 {
     bool isSaveStarted = false;
     std::string initFileName = "errorFileUnavailableTest.txt";
@@ -79,7 +79,7 @@ TEST_CASE("FileManager::saveFile()--errorFileUnavailableOnSaveTest", "[FileManag
 
 }
 
-TEST_CASE("FileManager::saveFile()--saveFileTest", "[FileManager::saveFile()--saveFileTest]")
+TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--saveSuccess]")
 {
     bool isSaveStarted = false;
     std::string initFileName = "saveFileTest.txt";
@@ -98,22 +98,17 @@ TEST_CASE("FileManager::saveFile()--saveFileTest", "[FileManager::saveFile()--sa
                                 REQUIRE(isSaveStarted);
                                 REQUIRE(initFileName == fileName);
                                 std::ofstream file(fileName);
-                                if (file.is_open())
+                                
+                                if (!file.is_open())
                                 {
-                                    file << dataBuffer;
-                                    std::stringstream buffer;
-                                    buffer << file.rdbuf();
-                                    file.close();
-                                    std::string result = buffer.str();
-                                    //TODO: Delete file
-                                    remove(fileName.c_str());
-                                    REQUIRE(result == dataBuffer);
-                                }
-                                else
-                                {
-                                    //unable to open file
                                     REQUIRE(false);
-                                }
+                                }                             
+                              
+                                std::stringstream buffer;
+                                buffer << file.rdbuf();
+                                file.close();                               
+                                remove(fileName.c_str());
+                                REQUIRE(buffer.str() == dataBuffer);
 
                         },
                         [&](const std::string& fileName, TextEditorCore::FileManager::FileIOErrorsEnum errorCode)
@@ -123,7 +118,7 @@ TEST_CASE("FileManager::saveFile()--saveFileTest", "[FileManager::saveFile()--sa
                         });
 }
 
-TEST_CASE("FileManager::loadFile()--loadFileTest", "[FileManager::loadFile()--loadFileTest]")
+TEST_CASE("FileManager::loadFile()--loadSuccess", "[FileManager::loadFile()--loadSuccess]")
 {
     bool isLoadStarted = false;
     std::string initFileName = "loadFileTest.txt";
@@ -143,14 +138,14 @@ TEST_CASE("FileManager::loadFile()--loadFileTest", "[FileManager::loadFile()--lo
                         },
                         [&](const std::string& fileName, std::string& dataBuffer )
                         {
-                            REQUIRE(isLoadStarted);
+                            REQUIRE(initFileName == fileName);
+                            REQUIRE(isLoadStarted);                      
                             REQUIRE(initDataBuffer == dataBuffer);
                             remove(fileName.c_str());
                         },
-                        [&](const std::string&, TextEditorCore::FileManager::FileIOErrorsEnum errorCode)
+                        [&](const std::string& fileName, TextEditorCore::FileManager::FileIOErrorsEnum errorCode)
                         {
                             REQUIRE(false);
                         });
-
 }
 
