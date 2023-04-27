@@ -18,12 +18,18 @@ public:
         FileUnavailable = 2
     };
 
+    //called when load is started, argument: fileName
     using StartLoadCallback = std::function<void (const std::string&)>;
+    //called when load is finished, arguments: fileName, dataBuffer
     using FinishLoadCallback = std::function<void (const std::string&, std::string&)>;
+    //called when load has failed, arguments: fileName, errorCode
     using ErrorLoadCallback = std::function<void (const std::string&, FileIOErrorsEnum)>;
 
+    //called when save is started, argument: fileName
     using StartSaveCallback = std::function<void (const std::string&)>;
+    //called when save is finished, argument: fileName
     using FinishSaveCallback = std::function<void (const std::string&)>;
+    //called when save has failed, arguments: fileName, errorCode
     using ErrorSaveCallback = std::function<void (const std::string&, FileIOErrorsEnum)>;
 
 private:
