@@ -17,7 +17,8 @@ public:
         FileDNExist = 1,
         FileUnavailable = 2,
         FileUnableToOpen = 3,
-        FileWriteError = 4
+        FileWriteError = 4,
+        FileReWriteTaboo = 5
     };
 
     using StartLoadCallback = std::function<void (const std::string&)>;
@@ -40,9 +41,9 @@ public:
     void loadFile(
         const std::string& filePath,
         std::string& dataBuffer,
-        StartLoadCallback& onStartLoadCallback,
-        FinishLoadCallback& onFinishLoadCallback,
-        ErrorLoadCallback& onErrorLoadCallback
+        const StartLoadCallback& onStartLoadCallback,
+        const FinishLoadCallback& onFinishLoadCallback,
+        const ErrorLoadCallback& onErrorLoadCallback
     );
     
     void stopWork();
@@ -51,9 +52,9 @@ public:
         const std::string& filePath,
         const std::string& dataBuffer,
         const bool isRewrite,
-        StartSaveCallback& onStartSaveCallback,
-        FinishSaveCallback& onFinishSaveCallback,
-        ErrorLoadCallback& onErrorSaveCallback
+        const StartSaveCallback& onStartSaveCallback,
+        const FinishSaveCallback& onFinishSaveCallback,
+        const ErrorLoadCallback& onErrorSaveCallback
     );
     
 };
