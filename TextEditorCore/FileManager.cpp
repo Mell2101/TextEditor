@@ -14,17 +14,17 @@ struct FileManager::PImpl
 {
     void loadFile(const std::string& filePath,
                   std::string& dataBuffer,
-                  StartLoadCallback onStartLoadCallback,
-                  FinishLoadCallback onFinishLoadCallback,
-                  ErrorLoadCallback onErrorLoadCallback);
+                  const StartLoadCallback onStartLoadCallback,
+                  const FinishLoadCallback onFinishLoadCallback,
+                  const ErrorLoadCallback onErrorLoadCallback);
     
     void stopWork();
     
     void saveFile(const std::string& filePath,
                   const std::string& dataBuffer,
-                  StartSaveCallback onStartSaveCallback,
-                  FinishSaveCallback onFinishSaveCallback,
-                  ErrorSaveCallback onErrorSaveCallback);
+                  const StartSaveCallback onStartSaveCallback,
+                  const FinishSaveCallback onFinishSaveCallback,
+                  const ErrorSaveCallback onErrorSaveCallback);
                   
     FileManager::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad);
     
@@ -33,9 +33,9 @@ struct FileManager::PImpl
 
 void FileManager::PImpl::loadFile(const std::string& filePath,
                                   std::string& dataBuffer,
-                                  StartLoadCallback onStartLoadCallback,
-                                  FinishLoadCallback onFinishLoadCallback,
-                                  ErrorLoadCallback onErrorLoadCallback)
+                                  const StartLoadCallback onStartLoadCallback,
+                                  const FinishLoadCallback onFinishLoadCallback,
+                                  const ErrorLoadCallback onErrorLoadCallback)
 {
     FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true);
     switch (errorCode)
@@ -59,9 +59,9 @@ void FileManager::PImpl::stopWork()
 
 void FileManager::PImpl::saveFile(const std::string& filePath,
                                   const std::string& dataBuffer,
-                                  StartSaveCallback onStartSaveCallback,
-                                  FinishSaveCallback onFinishSaveCallback,
-                                  ErrorSaveCallback onErrorSaveCallback)
+                                  const StartSaveCallback onStartSaveCallback,
+                                  const FinishSaveCallback onFinishSaveCallback,
+                                  const ErrorSaveCallback onErrorSaveCallback)
 {
     FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true);
     switch (errorCode)
@@ -98,9 +98,9 @@ FileManager::~FileManager()
 void FileManager::loadFile(
     const std::string& filePath,
     std::string& dataBuffer,
-    StartLoadCallback onStartLoadCallback,
-    FinishLoadCallback onFinishLoadCallback,
-    ErrorLoadCallback onErrorLoadCallback
+    const StartLoadCallback onStartLoadCallback,
+    const FinishLoadCallback onFinishLoadCallback,
+    const ErrorLoadCallback onErrorLoadCallback
 )
 {
     pimpl->loadFile(filePath, dataBuffer, onStartLoadCallback, onFinishLoadCallback, onErrorLoadCallback);
@@ -113,9 +113,9 @@ void FileManager::stopWork()
 
 void FileManager::saveFile(const std::string& filePath,
                            const std::string& dataBuffer,
-                           StartSaveCallback onStartSaveCallback,
-                           FinishSaveCallback onFinishSaveCallback,
-                           ErrorSaveCallback onErrorSaveCallback
+                           const StartSaveCallback onStartSaveCallback,
+                           const FinishSaveCallback onFinishSaveCallback,
+                           const ErrorSaveCallback onErrorSaveCallback
 )
 {
     pimpl->saveFile(filePath, dataBuffer, onStartSaveCallback, onFinishSaveCallback, onErrorSaveCallback);
