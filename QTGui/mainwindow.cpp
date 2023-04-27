@@ -7,6 +7,8 @@
 #include <QAction>
 #include <QLabel>
 #include <QToolBar>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -53,12 +55,72 @@ void MainWindow::newFile()
 
 void MainWindow::openFile()
 {
-    qDebug() << "\"Open file\" triggered";
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
+    if (!fileName.isEmpty())
+    {
+        qDebug() << "\"Open file\" triggered, file name is " << fileName;
+
+        // Checking for file opening via file name path, stored in fileName
+        if (false)
+            qDebug() << "File opened";
+        else
+        {
+            QMessageBox messageBox = QMessageBox
+                    (
+                        QMessageBox::Critical,
+                        tr("File error"),
+                        tr("Cannot open a file"),
+                        QMessageBox::NoButton, this
+                    );
+            messageBox.exec();
+        }
+    }
+    else
+    {
+        QMessageBox messageBox = QMessageBox
+                (
+                    QMessageBox::Critical,
+                    tr("File name error"),
+                    tr("Cannot get a file name"),
+                    QMessageBox::NoButton, this
+                );
+        messageBox.exec();
+    }
 }
 
 void MainWindow::saveFile()
 {
-    qDebug() << "\"Save file\" triggered";
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
+    if (!fileName.isEmpty())
+    {
+        qDebug() << "\"Save file\" triggered, file name is " << fileName;
+
+        // Checking for file opening via file name path, stored in fileName
+        if (false)
+            qDebug() << "File saved";
+        else
+        {
+            QMessageBox messageBox = QMessageBox
+                    (
+                        QMessageBox::Critical,
+                        tr("File error"),
+                        tr("Cannot save a file"),
+                        QMessageBox::NoButton, this
+                    );
+            messageBox.exec();
+        }
+    }
+    else
+    {
+        QMessageBox messageBox = QMessageBox
+                (
+                    QMessageBox::Critical,
+                    tr("File name error"),
+                    tr("Cannot get a file name"),
+                    QMessageBox::NoButton, this
+                );
+        messageBox.exec();
+    }
 }
 
 void MainWindow::exitProgramm()
