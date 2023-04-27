@@ -38,9 +38,9 @@ public:
     void loadFile(
         const std::string& filePath,
         std::string& dataBuffer,
-        StartLoadCallback onStartLoadCallback,
-        FinishLoadCallback onFinishLoadCallback,
-        ErrorLoadCallback onErrorLoadCallback
+        const StartLoadCallback onStartLoadCallback,
+        const FinishLoadCallback onFinishLoadCallback,
+        const ErrorLoadCallback onErrorLoadCallback
     );
     
     void stopWork();
@@ -48,9 +48,9 @@ public:
     void saveFile(
         const std::string& filePath,
         const std::string& dataBuffer,
-        StartSaveCallback onStartSaveCallback,
-        FinishSaveCallback onFinishSaveCallback,
-        ErrorLoadCallback onErrorSaveCallback
+        const StartSaveCallback onStartSaveCallback,
+        const FinishSaveCallback onFinishSaveCallback,
+        const ErrorLoadCallback onErrorSaveCallback
     );
     
 };
