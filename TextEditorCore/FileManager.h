@@ -10,31 +10,49 @@ namespace TextEditorCore
 
 class FileManager //Signleton
 {
+public:
+    enum FileIOErrorsEnum
+    {
+        NoError = 0,
+        FileDNExist = 1,
+        FileUnavailable = 2
+    };
+
+    using StartLoadCallback = std::function<void (const std::string&)>;
+    using FinishLoadCallback = std::function<void (const std::string&, std::string&)>;
+    using ErrorLoadCallback = std::function<void (const std::string&, FileIOErrorsEnum)>;
+
+    using StartSaveCallback = std::function<void (const std::string&)>;
+    using FinishSaveCallback = std::function<void (const std::string&)>;
+    using ErrorSaveCallback = std::function<void (const std::string&, FileIOErrorsEnum)>;
+
 private:
     struct PImpl;
     std::unique_ptr<PImpl> pimpl;
     
 public:
+
+    FileManager();
+    ~FileManager();
+
     void loadFile(
         const std::string& filePath,
-        std::function<void ()> onStartLoadCallback,
-        std::function<void ()> onFinishLoadCallback,
-        std::function<void ()> onErrorLoadCallback
+        std::string& dataBuffer,
+        const StartLoadCallback onStartLoadCallback,
+        const FinishLoadCallback onFinishLoadCallback,
+        const ErrorLoadCallback onErrorLoadCallback
     );
     
     void stopWork();
     
     void saveFile(
         const std::string& filePath,
-        const std::vector<uint8_t> data,
-        std::function<void ()> onStartSaveCallback,
-        std::function<void ()> onFinishSaveCallback,
-        std::function<void ()> onErrorSaveCallback
+        const std::string& dataBuffer,
+        const StartSaveCallback onStartSaveCallback,
+        const FinishSaveCallback onFinishSaveCallback,
+        const ErrorLoadCallback onErrorSaveCallback
     );
     
-    //load file
-    //save file
-    //save file
 };
 
 }// namespace TextEditorCore
