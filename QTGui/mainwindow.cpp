@@ -60,7 +60,7 @@ void MainWindow::openFile()
     {
         qDebug() << "\"Open file\" triggered, file name is " << fileName;
 
-        // Checking for file opening via file name path, stored in fileName
+        // ToDo: checking for file opening via file name path, stored in fileName
         if (true)
         {
             QMessageBox messageBox = QMessageBox
@@ -84,7 +84,7 @@ void MainWindow::saveFile()
     {
         qDebug() << "\"Save file\" triggered, file name is " << fileName;
 
-        // Checking for file opening via file name path, stored in fileName
+        // ToDo: checking for file opening via file name path, stored in fileName
         if (true)
         {
             QMessageBox messageBox = QMessageBox
