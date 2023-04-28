@@ -61,9 +61,7 @@ void MainWindow::openFile()
         qDebug() << "\"Open file\" triggered, file name is " << fileName;
 
         // Checking for file opening via file name path, stored in fileName
-        if (false)
-            qDebug() << "File opened";
-        else
+        if (true)
         {
             QMessageBox messageBox = QMessageBox
                     (
@@ -74,17 +72,8 @@ void MainWindow::openFile()
                     );
             messageBox.exec();
         }
-    }
-    else
-    {
-        QMessageBox messageBox = QMessageBox
-                (
-                    QMessageBox::Critical,
-                    tr("File name error"),
-                    tr("Cannot get a file name"),
-                    QMessageBox::NoButton, this
-                );
-        messageBox.exec();
+        else
+            qDebug() << "File opened";
     }
 }
 
@@ -96,9 +85,7 @@ void MainWindow::saveFile()
         qDebug() << "\"Save file\" triggered, file name is " << fileName;
 
         // Checking for file opening via file name path, stored in fileName
-        if (false)
-            qDebug() << "File saved";
-        else
+        if (true)
         {
             QMessageBox messageBox = QMessageBox
                     (
@@ -109,17 +96,8 @@ void MainWindow::saveFile()
                     );
             messageBox.exec();
         }
-    }
-    else
-    {
-        QMessageBox messageBox = QMessageBox
-                (
-                    QMessageBox::Critical,
-                    tr("File name error"),
-                    tr("Cannot get a file name"),
-                    QMessageBox::NoButton, this
-                );
-        messageBox.exec();
+        else
+            qDebug() << "File saved";
     }
 }
 
@@ -159,8 +137,20 @@ inline void MainWindow::toolBarInit()
 {
     QToolBar* toolBarFile = addToolBar(tr("File"));
     toolBarFile->addAction(QIcon("://icons/document-new.svg"), tr("New"));
-    toolBarFile->addAction(QIcon("://icons/document-open.svg"), tr("Open"));
-    toolBarFile->addAction(QIcon("://icons/document-save.svg"), tr("Save"));
+    toolBarFile->addAction
+            (
+                QIcon("://icons/document-open.svg"),
+                tr("Open"),
+                this,
+                &MainWindow::openFile
+            );
+    toolBarFile->addAction
+            (
+                QIcon("://icons/document-save.svg"),
+                tr("Save"),
+                this,
+                &MainWindow::saveFile
+            );
 
     QToolBar* toolBarEdit = addToolBar(tr("Edit"));
     toolBarEdit->addAction
