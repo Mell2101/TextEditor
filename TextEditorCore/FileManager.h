@@ -16,9 +16,9 @@ public:
         NoError = 0,
         FileDNExist = 1,
         FileUnavailable = 2,
-        FileUnableToOpen = 3,
-        FileWriteError = 4,
-        FileReWriteTaboo = 5
+        FileWriteError = 3,
+        FileReWriteTaboo = 4,
+        FileReadError = 5
     };
 
     using StartLoadCallback = std::function<void (const std::string&)>;
