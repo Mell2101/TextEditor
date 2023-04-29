@@ -15,7 +15,10 @@ public:
     {
         NoError = 0,
         FileDNExist = 1,
-        FileUnavailable = 2
+        FileUnavailable = 2,
+        FileWriteError = 3,
+        FileReWriteTaboo = 4,
+        FileReadError = 5
     };
 
     //called when load is started, argument: fileName
@@ -44,9 +47,9 @@ public:
     void loadFile(
         const std::string& filePath,
         std::string& dataBuffer,
-        const StartLoadCallback onStartLoadCallback,
-        const FinishLoadCallback onFinishLoadCallback,
-        const ErrorLoadCallback onErrorLoadCallback
+        const StartLoadCallback& onStartLoadCallback,
+        const FinishLoadCallback& onFinishLoadCallback,
+        const ErrorLoadCallback& onErrorLoadCallback
     );
     
     void stopWork();
@@ -54,9 +57,10 @@ public:
     void saveFile(
         const std::string& filePath,
         const std::string& dataBuffer,
-        const StartSaveCallback onStartSaveCallback,
-        const FinishSaveCallback onFinishSaveCallback,
-        const ErrorLoadCallback onErrorSaveCallback
+        const bool isRewrite,
+        const StartSaveCallback& onStartSaveCallback,
+        const FinishSaveCallback& onFinishSaveCallback,
+        const ErrorLoadCallback& onErrorSaveCallback
     );
     
 };
