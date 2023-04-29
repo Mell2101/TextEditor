@@ -19,20 +19,6 @@ int main(int argc, char const *argv[])
     TextManagerTest::defaultContructorTest();
     TextManagerTest::stringContructorTest();
 
-    TextEditorCore::FileManager test;
-    test.saveFile("~/nikita/TestFile.txt", "aspofsd,gplsdgp", true, [&](const std::string& fn)
-                                           {
-                                             int a = 10;                                            
-                                           },
-                                           [&](const std::string& fn)
-                                           {
-                                             int a = 10;
-                                           },
-                                           [&](const std::string& fn, TextEditorCore::FileManager::FileIOErrorsEnum error)
-                                           {
-                                             int a = 10;
-                                           }
-                                           );
 
 
     printf("\nTESTS END\n");

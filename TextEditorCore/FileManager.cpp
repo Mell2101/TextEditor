@@ -43,15 +43,19 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
     // switch (errorCode)
     // {
     //     case FileManager::FileIOErrorsEnum::NoError:
-    //         onStartLoadCallback(filePath);
+    //         
     //         //Loading file here
-    //         dataBuffer = "dummyData";
-    //         onFinishLoadCallback(filePath, dataBuffer);
+    //         onStartLoadCallback(filePath);
+    //           dataBuffer = "dummyData";
+    //           onFinishLoadCallback(filePath, dataBuffer);
+    //         
     //         return;
     //     default:
     //         onErrorLoadCallback(filePath, errorCode);
     //         return;
     // }
+
+    
 }
 
 void FileManager::PImpl::stopWork()
