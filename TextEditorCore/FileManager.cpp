@@ -38,22 +38,33 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
                                   const FinishLoadCallback& onFinishLoadCallback,
                                   const ErrorLoadCallback& onErrorLoadCallback)
 {
-    // Comment cuz checkPath is deleted
-    // FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true, true);
-    // switch (errorCode)
-    // {
-    //     case FileManager::FileIOErrorsEnum::NoError:
-    //         
-    //         //Loading file here
-    //         onStartLoadCallback(filePath);
-    //           dataBuffer = "dummyData";
-    //           onFinishLoadCallback(filePath, dataBuffer);
-    //         
-    //         return;
-    //     default:
-    //         onErrorLoadCallback(filePath, errorCode);
-    //         return;
-    // }
+    onStartLoadCallback(filePath);
+
+    if (std::filesystem::exists(filePath))
+    {
+        std::ifstream file(filePath);
+        file.open(filePath);
+
+        if (file.is_open())
+        {
+            getline(file, dataBuffer);
+
+            if (file.fail())
+            {
+                onErrorLoadCallback(filePath, FileIOErrorsEnum::FileReadError);
+                return;
+            }
+            
+        }else
+            onErrorLoadCallback(filePath, FileIOErrorsEnum::FileUnavailable);
+    }else
+        onErrorLoadCallback(filePath, FileIOErrorsEnum::FileDNExist);
+        return;
+    
+
+    
+
+    onFinishLoadCallback(filePath, dataBuffer);
 
     
 }
@@ -70,8 +81,6 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
                                   const FinishSaveCallback& onFinishSaveCallback,
                                   const ErrorSaveCallback& onErrorSaveCallback)
 {
-//    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true, true);
-
 
             onStartSaveCallback(filePath);
             // Saving file here
@@ -79,8 +88,6 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
         
             file.close();
             file.open(filePath);
-            
-
 
             if (!file.is_open())
             {
@@ -96,6 +103,7 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
             if(std::filesystem::exists(filePath) && isRewrite == false)
             {
                 onErrorSaveCallback(filePath, FileIOErrorsEnum::FileReWriteTaboo);
+                return;
             }
 
             file << dataBuffer;
