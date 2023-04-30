@@ -63,7 +63,7 @@ void MainWindow::openFile()
         // TODO: checking for file opening via file name path, stored in fileName
         if (true)
         {
-            QMessageBox messageBox
+            QMessageBox
                     (
                         QMessageBox::Critical,
                         tr("File error"),
@@ -86,7 +86,7 @@ void MainWindow::saveFile()
         // TODO: checking for file opening via file name path, stored in fileName
         if (true)
         {
-            QMessageBox messageBox
+            QMessageBox
                     (
                         QMessageBox::Critical,
                         tr("File error"),
