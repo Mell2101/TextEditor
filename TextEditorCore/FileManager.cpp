@@ -43,12 +43,10 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
     if (std::filesystem::exists(filePath))
     {
         std::ifstream file(filePath);
-
         file.open(filePath);
 
         if (file.is_open())
         {
-        
             getline(file, dataBuffer);
 
             if (file.fail())
@@ -57,7 +55,6 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
                 return;
             }
             
-        
         }else
             onErrorLoadCallback(filePath, FileIOErrorsEnum::FileUnavailable);
     }else
@@ -84,8 +81,6 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
                                   const FinishSaveCallback& onFinishSaveCallback,
                                   const ErrorSaveCallback& onErrorSaveCallback)
 {
-//    FileManager::FileIOErrorsEnum errorCode = checkPath(filePath, true, true);
-
 
             onStartSaveCallback(filePath);
             // Saving file here
@@ -93,8 +88,6 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
         
             file.close();
             file.open(filePath);
-            
-
 
             if (!file.is_open())
             {
