@@ -9,6 +9,8 @@
 #include <QToolBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPrinter>
+#include <QPrintDialog>
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -39,6 +41,16 @@ void MainWindow::openFontDialog()
     QFontDialog fontDialog(this);
     bool accept;
     fontDialog.getFont(&accept);
+}
+
+void MainWindow::openPrintDocumentDialog()
+{
+    QPrinter printer;
+    QPrintDialog printDialog(&printer, this);
+    printDialog.setWindowTitle(tr("Print Document"));
+    if (printDialog.exec() != QDialog::Accepted)
+        return;
+    m_pTextArea->print(&printer);
 }
 
 void MainWindow::updateTextCursorPosInfo()
@@ -112,6 +124,7 @@ inline void MainWindow::menuInit()
     fileMenu->addAction(tr("Open"), this, &MainWindow::openFile, QKeySequence(tr("Ctrl+O")));
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Save"), this, &MainWindow::saveFile, QKeySequence(tr("Ctrl+S")));
+    fileMenu->addAction(tr("Print..."), this, &MainWindow::openPrintDocumentDialog, QKeySequence(tr("Ctrl+P")));
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Exit"), this, &MainWindow::exitProgramm);
 
@@ -148,6 +161,12 @@ inline void MainWindow::toolBarInit()
                 tr("Save"),
                 this,
                 &MainWindow::saveFile
+    toolBarFile->addAction
+            (
+                QIcon("://icons/document-print.svg"),
+                tr("Print..."),
+                this,
+                &MainWindow::openPrintDocumentDialog
             );
 
     QToolBar* toolBarEdit = addToolBar(tr("Edit"));
