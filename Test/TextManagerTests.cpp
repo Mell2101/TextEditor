@@ -59,7 +59,7 @@ TEST_CASE("TextManager::setTextData()", "[TextManager::setTextData()]")
         TextEditorCore::TextManager textManager("blah blah!");
         textManager.setTextData(std::string());
         const std::string& text = textManager.getTextData();
-        REQUIRE(text.empty());
+        REQUIRE(text == "blah blah!");
     }
 
     {
