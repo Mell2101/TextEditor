@@ -59,7 +59,7 @@ TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()-
 
     TextEditorCore::FileManager fileManager;
 
-    fileManager.saveFile(initFileName, dataBuffer,
+    fileManager.saveFile(initFileName, dataBuffer, false,
                         [&](const std::string& fileName)
                         {
                             fileHolder.close();
@@ -87,7 +87,7 @@ TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--sav
 
     TextEditorCore::FileManager fileManager;
 
-    fileManager.saveFile(initFileName, dataBuffer,
+    fileManager.saveFile(initFileName, dataBuffer, false,
                         [&](const std::string& fileName)
                         {
                                 isSaveStarted = true;
