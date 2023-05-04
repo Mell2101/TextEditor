@@ -161,6 +161,7 @@ inline void MainWindow::toolBarInit()
                 tr("Save"),
                 this,
                 &MainWindow::saveFile
+            );
     toolBarFile->addAction
             (
                 QIcon("://icons/document-print.svg"),
