@@ -21,6 +21,7 @@ public slots:
     void newFile();
     void openFile();
     void saveFile();
+    void openAboutMessageBox();
     void exitProgramm();
 
 private:

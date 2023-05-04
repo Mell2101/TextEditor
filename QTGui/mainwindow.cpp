@@ -111,6 +111,25 @@ void MainWindow::saveFile()
     }
 }
 
+void MainWindow::openAboutMessageBox()
+{
+    QMessageBox::about
+            (
+                this,
+                tr("About \"Mister Note Pad 2023 XLL ULTRA\""),
+                tr("\"Mister Note Pad 2023 XLL ULTRA\"\n\n"
+                   "Development team:\n"
+                   "Alexeychiv\n"
+                   "Timofey Kagochkin\n"
+                   "Алексей (Riki)\n"
+                   "Prohor\n"
+                   "Nikita Labur-Strel\n"
+                   "Максим Строганов\n"
+                   "Макдудоль Сержант\n\n"
+                   "2023")
+            );
+}
+
 void MainWindow::exitProgramm()
 {
     exit(0);
@@ -135,6 +154,10 @@ inline void MainWindow::menuInit()
     editMenu->addAction(tr("Copy"), m_pTextArea, &CustomTextEdit::copy, QKeySequence(tr("Ctrl+C")));
     editMenu->addAction(tr("Paste"), m_pTextArea, &CustomTextEdit::paste, QKeySequence(tr("Ctrl+V")));
     editMenu->addAction(tr("Fonts..."), this, &MainWindow::openFontDialog, QKeySequence(tr("Ctrl+Shift+F")));
+
+    QMenu* settingsMenu = menuBar()->addMenu(tr("Settings"));
+    settingsMenu->addAction(tr("About..."), this, &MainWindow::openAboutMessageBox);
+    settingsMenu->addAction(tr("About Qt..."), this, &QApplication::aboutQt);
 }
 
 inline void MainWindow::statusBarInit()
@@ -161,6 +184,7 @@ inline void MainWindow::toolBarInit()
                 tr("Save"),
                 this,
                 &MainWindow::saveFile
+            );
     toolBarFile->addAction
             (
                 QIcon("://icons/document-print.svg"),
