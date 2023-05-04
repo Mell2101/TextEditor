@@ -32,14 +32,14 @@ std::string TextManager::getSegment(const std::pair<size_t, size_t> &segment) co
     return std::string("0");
 }
 
-void TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
+bool TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
 {
-    return;
+    return false;
 }
 
-void TextManager::insertSegment(const std::string &segmentData, const size_t pos)
+bool TextManager::insertSegment(const std::string &segmentData, const size_t pos)
 {
-    return;
+    return false;
 }
 
 
