@@ -32,30 +32,48 @@ std::string TextManager::getSegment(const std::pair<size_t, size_t> &segment) co
     return std::string("0");
 }
 
-void TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
-{  
+bool TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
+{
+    try
+    {
         data.erase(segment.first, segment.second);
+    }
+    catch(const std::exception& e)
+    {
+        return false;
+    }
+    
+        return true;
 }
 
-void TextManager::insertSegment(const std::string &segmentData, const size_t pos)
+bool TextManager::insertSegment(const std::string &segmentData, const size_t pos)
 {
-    if (data.length() < pos)
+    try
     {
-        size_t tempPosition = pos - data.length();
-        
-        for (size_t i = tempPosition; i < pos; i++)
+        if (data.length() < pos)
         {
-            data.insert(tempPosition, " ");
+            size_t tempPosition = pos - data.length();
+
+            for (size_t i = tempPosition; i < pos; i++)
+            {
+                data.insert(tempPosition, " ");
+            }
+            
+            data.insert(pos,segmentData);
         }
-        
-        data.insert(pos,segmentData);
+        else if (data.length() >= pos)
+        {
+            data.insert(pos, segmentData);
+        }
     }
-    else if (data.length() >= pos)
+    catch(const std::exception& e)
     {
-        data.insert(pos, segmentData);
+        return false;
     }
     
     
+    
+    return true;
 }
 
 
