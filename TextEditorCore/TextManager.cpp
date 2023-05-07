@@ -15,13 +15,11 @@ TextManager::TextManager(const std::string& data) : data(data)
 void TextManager::setTextData(const std::string &content)
 {
     data = content;
-    return;
 }
 
 void TextManager::clean()
 {
-    data = "";
-    return;
+    data.clear();
 }
 
 std::vector<std::pair<size_t, size_t> > TextManager::find(const std::string &token)
@@ -35,32 +33,29 @@ std::string TextManager::getSegment(const std::pair<size_t, size_t> &segment) co
 }
 
 void TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
-{
-    size_t it = segment.first;
-
-    while (it != segment.second)
-    {     
-        data.erase(it);
-        it++;
-    }
-    
-    return;
+{  
+        data.erase(segment.first, segment.second);
 }
 
 void TextManager::insertSegment(const std::string &segmentData, const size_t pos)
 {
-    if (data.back() == pos)
+    if (data.length() < pos)
     {
-        data.append(segmentData, 0, segmentData.back());
-    }
-    else if (data.back() != pos)
-    {
+        size_t tempPosition = pos - data.length();
+        
+        for (size_t i = tempPosition; i < pos; i++)
+        {
+            data.insert(tempPosition, " ");
+        }
+        
         data.insert(pos,segmentData);
     }
+    else if (data.length() >= pos)
+    {
+        data.insert(pos, segmentData);
+    }
     
     
-    
-    return;
 }
 
 
