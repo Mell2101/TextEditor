@@ -72,40 +72,56 @@ TEST_CASE("TextManager::setTextData()", "[TextManager::setTextData()]")
 
 TEST_CASE("TextManager::insertSegment()", "[TextManager::insertSegment()]")
 {
-    
+    // insert a segment at the begining
     {
         TextEditorCore::TextManager textManager("blah blah");
         bool result = textManager.insertSegment("new ", 0);
         const std::string& text = textManager.getTextData();
-        REQUIRE((text == "new blah blah" && result == true));
+        REQUIRE(text == "new blah blah");
+        REQUIRE(result == true);
     }
 
+    // insert a segment at the end
+    {
+        TextEditorCore::TextManager textManager("blah blah");
+        bool result = textManager.insertSegment(" new", textManager.getTextData().size());
+        const std::string& text = textManager.getTextData();
+        REQUIRE(text == "blah blah new");
+        REQUIRE(result == true);
+    }
+    
+    // insert a segment in hte midle
+        {
+        TextEditorCore::TextManager textManager("blah blah");
+        bool result = textManager.insertSegment("new ", 4);
+        const std::string& text = textManager.getTextData();
+        REQUIRE(text == "blah new blah");
+        REQUIRE(result == true);
+    }
+    
+    // insert emty string
     {
         TextEditorCore::TextManager textManager("blah blah");
         bool result = textManager.insertSegment(std::string(), 0);
         const std::string& text = textManager.getTextData();
-        REQUIRE((text == "blah blah" && result == true));
+        REQUIRE(text == "blah blah");
+        REQUIRE(result == true);
     }
-
-    {
-        TextEditorCore::TextManager textManager;
-        bool result = textManager.insertSegment("new ", 0);
-        const std::string& text = textManager.getTextData();
-        REQUIRE((text == "new " && result == true));
-    }
-
+    // insert segment in position higher then textManager size
     {
         TextEditorCore::TextManager textManager("blah blah");
         bool result = textManager.insertSegment("new ", 125);
         const std::string& text = textManager.getTextData();
-        REQUIRE((text == "blah blah" && result == false));
+        REQUIRE(text == "blah blah");
+        REQUIRE(result == false);
     }
-
+    // insert emty string in emty textManager
     {
         TextEditorCore::TextManager textManager;
         bool result = textManager.insertSegment(std::string(), 0);
         const std::string& text = textManager.getTextData();
         REQUIRE((text == "" && result == true));
+        REQUIRE((text == "new blah blah" && result == true));
     }
 }
 
