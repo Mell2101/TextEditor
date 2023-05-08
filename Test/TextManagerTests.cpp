@@ -143,7 +143,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
         REQUIRE(text == "blah blah");
         REQUIRE(result == true);
     }
-    // test erasing of empty TextManager
+    // check if the segment is removed outside of bounds
     {
         TextEditorCore::TextManager textManager;
         bool result = textManager.eraseSegment(std::make_pair(156,5));
