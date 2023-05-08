@@ -129,7 +129,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
 {   
     {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.eraseSegment(std::make_pair(0,5));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(0,5));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "blah");
         REQUIRE(result == true);
@@ -138,7 +138,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
     // tests erasing segment of 0 length
     {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.eraseSegment(std::make_pair(0,0));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(0,0));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "blah blah");
         REQUIRE(result == true);
@@ -146,7 +146,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
     // test erasing of empty TextManager
     {
         TextEditorCore::TextManager textManager;
-        bool result = textManager.eraseSegment(std::make_pair(156,5));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(156,5));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "");
         REQUIRE(result == false);
@@ -154,7 +154,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
     // test incorect eraseSegment range
     {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.eraseSegment(std::make_pair(5,0));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(5,0));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "blah blah");
         REQUIRE(result == true);
@@ -162,7 +162,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
     // test erasing rage greater then text
     {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.eraseSegment(std::make_pair(1,123));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(1,123));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "b");
         REQUIRE(result == true);
@@ -170,7 +170,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
     // erasing 0 length segment from emty TextManager
     {
         TextEditorCore::TextManager textManager;
-        bool result = textManager.eraseSegment(std::make_pair(0,0));
+        bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(0,0));
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "" );
         REQUIRE(result == true);
