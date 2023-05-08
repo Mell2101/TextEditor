@@ -57,9 +57,10 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
             
         }else
             onErrorLoadCallback(filePath, FileIOErrorsEnum::FileUnavailable);
-    }else
+    }else{
         onErrorLoadCallback(filePath, FileIOErrorsEnum::FileDNExist);
         return;
+    }
     
 
     
