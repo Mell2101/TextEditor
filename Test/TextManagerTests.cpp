@@ -38,7 +38,7 @@ TEST_CASE("TextManager::setTextData()", "[TextManager::setTextData()]")
         TextEditorCore::TextManager textManager("blah blah!");
         textManager.setTextData("new text!");
         const std::string& text = textManager.getTextData();
-        REQUIRE(text == "new text");
+        REQUIRE(text == "new text!");
     }
 
     {
@@ -93,7 +93,7 @@ TEST_CASE("TextManager::insertSegment()", "[TextManager::insertSegment()]")
     // insert a segment in hte midle
         {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.insertSegment("new ", 4);
+        bool result = textManager.insertSegment("new ", 5);
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "blah new blah");
         REQUIRE(result == true);
@@ -143,7 +143,7 @@ TEST_CASE("TextManager::eraseSegment()", "[TextManager::eraseSegment()]")
         REQUIRE(text == "blah blah");
         REQUIRE(result == true);
     }
-    // test erasing of empty TextManager
+    // check if the segment is removed outside of bounds
     {
         TextEditorCore::TextManager textManager;
         bool result = textManager.eraseSegment(std::make_pair<size_t, size_t>(156,5));
