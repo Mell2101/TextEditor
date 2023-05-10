@@ -121,7 +121,7 @@ TEST_CASE("TextManager::insertSegment()", "[TextManager::insertSegment()]")
         bool result = textManager.insertSegment(std::string(), 0);
         const std::string& text = textManager.getTextData();
         REQUIRE((text == "" && result == true));
-        REQUIRE((text == "new blah blah" && result == true));
+        REQUIRE(result == true);
     }
 }
 
