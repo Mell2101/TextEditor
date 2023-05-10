@@ -38,7 +38,7 @@ TEST_CASE("TextManager::setTextData()", "[TextManager::setTextData()]")
         TextEditorCore::TextManager textManager("blah blah!");
         textManager.setTextData("new text!");
         const std::string& text = textManager.getTextData();
-        REQUIRE(text == "new text");
+        REQUIRE(text == "new text!");
     }
 
     {
