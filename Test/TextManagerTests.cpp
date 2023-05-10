@@ -93,7 +93,7 @@ TEST_CASE("TextManager::insertSegment()", "[TextManager::insertSegment()]")
     // insert a segment in hte midle
         {
         TextEditorCore::TextManager textManager("blah blah");
-        bool result = textManager.insertSegment("new ", 4);
+        bool result = textManager.insertSegment("new ", 5);
         const std::string& text = textManager.getTextData();
         REQUIRE(text == "blah new blah");
         REQUIRE(result == true);
