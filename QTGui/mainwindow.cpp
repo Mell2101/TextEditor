@@ -155,9 +155,9 @@ inline void MainWindow::menuInit()
     editMenu->addAction(tr("Paste"), m_pTextArea, &CustomTextEdit::paste, QKeySequence(tr("Ctrl+V")));
     editMenu->addAction(tr("Fonts..."), this, &MainWindow::openFontDialog, QKeySequence(tr("Ctrl+Shift+F")));
 
-    QMenu* settingsMenu = menuBar()->addMenu(tr("Settings"));
-    settingsMenu->addAction(tr("About..."), this, &MainWindow::openAboutMessageBox);
-    settingsMenu->addAction(tr("About Qt..."), this, &QApplication::aboutQt);
+    QMenu* helpMenu = menuBar()->addMenu(tr("Help"));
+    helpMenu->addAction(tr("About..."), this, &MainWindow::openAboutMessageBox);
+    helpMenu->addAction(tr("About Qt..."), this, &QApplication::aboutQt);
 }
 
 inline void MainWindow::statusBarInit()
