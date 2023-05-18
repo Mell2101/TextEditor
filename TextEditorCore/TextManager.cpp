@@ -65,25 +65,35 @@ bool TextManager::eraseSegment(const std::pair<size_t, size_t> &segment)
 
 bool TextManager::insertSegment(const std::string &segmentData, const size_t pos)
 {
-    if (data.length() < pos)
+    try
+    {
+        if (data.length() < pos)
+        {
+            return false;
+        }
+        else if(data.length() - 1 == pos)
+        {
+            data.append(segmentData);
+            return true;
+        }
+        else if(0 == pos)
+        {
+            data.append(segmentData);
+            return true;
+        }
+        else
+        {
+            data.insert(pos,segmentData);
+            return true;
+        }
+    }
+
+    catch(...)
     {
         return false;
     }
-    else if(data.back() == pos)
-    {
-        data.append(segmentData);
-        return true;
-    }
-    else if(data.front() == pos)
-    {
-        data.append(segmentData);
-        return true;
-    }
-    else
-    {
-        data.insert(pos,segmentData);
-        return true;
-    }
+    
+    
     
 }
 
