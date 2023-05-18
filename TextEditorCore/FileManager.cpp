@@ -38,15 +38,17 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
                                   const FinishLoadCallback& onFinishLoadCallback,
                                   const ErrorLoadCallback& onErrorLoadCallback)
 {
-    onStartLoadCallback(filePath);
+    
 
     if (std::filesystem::exists(filePath))
     {
         std::ifstream file(filePath);
         file.open(filePath);
+        
 
         if (file.is_open())
         {
+            onStartLoadCallback(filePath);
             getline(file, dataBuffer);
 
             if (file.fail())
@@ -83,37 +85,54 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
                                   const ErrorSaveCallback& onErrorSaveCallback)
 {
 
-            onStartSaveCallback(filePath);
+            
             // Saving file here
-            std::ofstream file(filePath);
+            std::fstream file(filePath);
         
-            file.close();
             file.open(filePath);
-
-            if (!file.is_open())
+            
+            if (std::filesystem::exists(filePath))
             {
-                if (std::filesystem::exists(filePath))
+                if (file.is_open())
                 {
+                    onStartSaveCallback(filePath);
+                    
+                    file << dataBuffer;
+
+                    if (file.fail())
+                    {
+                        onErrorSaveCallback(filePath, FileIOErrorsEnum::FileWriteError);
+                        return;
+                    }
+                    
                     onErrorSaveCallback(filePath, FileIOErrorsEnum::FileUnavailable);
                     return;
+                
                 }
-
             }
-
-
-            if(std::filesystem::exists(filePath) && isRewrite == false)
-            {
-                onErrorSaveCallback(filePath, FileIOErrorsEnum::FileReWriteTaboo);
-                return;
-            }
-
-            file << dataBuffer;
             
-            if (file.fail())
-            {
-                onErrorSaveCallback(filePath, FileIOErrorsEnum::FileWriteError);
-                    return;
-            }
+            
+
+           
+
+            // if (file.is_open())
+            // {
+            //     if(std::filesystem::exists(filePath) && isRewrite == false && file.fail())
+            //     {
+            //         onErrorSaveCallback(filePath, FileIOErrorsEnum::FileReWriteTaboo);
+            //         return;
+            //     }   
+            // }
+            
+             
+
+            
+            
+            // if (file.fail())
+            // {
+            //     onErrorSaveCallback(filePath, FileIOErrorsEnum::FileWriteError);
+            //         return;
+            // }
             
             
             onFinishSaveCallback(filePath);
