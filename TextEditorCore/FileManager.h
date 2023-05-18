@@ -40,7 +40,7 @@ public:
 
     void resume(const std::string& filePath, FileIOListener&);
 
-    void stopWork();
+    void stopWork(const std::string& filePath, FileIOListener&);
     
 };
 
