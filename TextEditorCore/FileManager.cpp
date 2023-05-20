@@ -19,44 +19,14 @@
 namespace TextEditorCore
 {
 
-// class Worker{
-
-//     std::condition_variable cv;
-//     bool pauseFlag;
-//     std::atomic<bool> stopFalag;
-//     std::thread functionThread;
-    
-//     void pause();
-//     void resume();
-//     void stopWork();
-//     void startWork();
-
-// };
-
-struct ThreadFlags
-{
-private:
-    bool m_pauseFlag = false;
-    bool m_stopWorkFlag = false;
-
-public:
-    bool getPauseFlag(){return m_pauseFlag;};
-    bool getStopWorkFlag(){return m_stopWorkFlag;}
-
-    void setPauseFlag(const bool a){m_pauseFlag = a;}
-    void setStopWorkFlag(const bool a){m_stopWorkFlag = a;}
-};
-
-
 struct FileManager::PImpl
 {
     // using pauseFlag = bool;
 private:
-    std::unordered_map<std::string, ThreadFlags> m_filePathPauseFlagMap;
-    std::mutex m_filePathPauseFlagMapMutex;
+    std::atomic<bool> m_pausFlag;
+    std::atomic<bool> m_stopWorkFlag;
+    std::mutex m_fileManagerMutex;
     std::condition_variable m_pauseCondition;
-    std::atomic<bool> m_isStopWork;
-    // впорос что елает stopWork если отсанавливает все потоки то надо добавить флаг
     const size_t m_chunkSize;
 
     // TODO: ADD DEFINES
@@ -105,14 +75,6 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
                                 FileIOListener& listner
                                 )
 {
-    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    if(m_filePathPauseFlagMap.emplace(filePath, ThreadFlags()).second == false)
-    {
-        // TODO: определиться с ошибкой для колбэка
-        listner.onIOError("", FileIOListener::FileUnavailable);
-        return;
-    }
-    
     std::thread loadThread(&FileManager::PImpl::loadFileFunction,
                             this,
                             std::ref(filePath),
@@ -120,23 +82,23 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
                             std::ref(listner)
                         );
     loadThread.detach();
-
 }
+
+
 
 void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                                         std::string& dataBuffer,
                                         FileIOListener& listner
                                         )
 {
-    listner.onIOStart(filePath);
-    
+   
     if (std::filesystem::exists(filePath))
     {
         std::ifstream file(filePath);
-        file.open(filePath);
 
         if (file.is_open())
         {
+            listner.onIOStart(filePath);
             // get length of file:
             file.seekg (0, file.end);
             int length = static_cast<int>(file.tellg());
@@ -144,33 +106,21 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
             const float percentage = static_cast<float>(m_chunkSize) * static_cast<float>(length) / 100.0;
 
             dataBuffer.clear();
-            dataBuffer.reserve(length);
+            dataBuffer.resize(length);
 
             float percentageRead = 0;
-            while(!file.eof() && !m_isStopWork)
+            while(!file.eof())
             {
-                std::unique_lock lock(m_filePathPauseFlagMapMutex);
-                
-                m_pauseCondition.wait(lock,
-                    [pauseFlag = m_filePathPauseFlagMap.at(filePath).getPauseFlag(),
-                    stopFlag = m_filePathPauseFlagMap.at(filePath).getStopWorkFlag()]()
-                    {return pauseFlag || stopFlag;}
-                );
+                std::unique_lock lock(m_fileManagerMutex);
+                m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ](){return (a || b);});
                 lock.unlock();
-                if(m_filePathPauseFlagMap.at(filePath).getStopWorkFlag())
-                {
-                    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-                    m_filePathPauseFlagMap.erase(filePath);
-                    listner.onStop();
-                    return;
-                }
+                if(m_stopWorkFlag)
+                    break;
 
                 file.read(dataBuffer.data() + file.tellg(), m_chunkSize);
-                if(file.fail())
+                if(file.fail() && !file.eof())
                 {
                     listner.onIOError(filePath, FileIOListener::FileReadError);
-                    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-                    m_filePathPauseFlagMap.erase(filePath);
                     return;
                 }
                 percentageRead += percentage;
@@ -183,81 +133,45 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         else
         {
             listner.onIOError(filePath, FileIOListener::FileUnavailable);
+            return;
         }
     }
     else
     {
         listner.onIOError(filePath, FileIOListener::FileDNExist);
-        std::lock_guard lock(m_filePathPauseFlagMapMutex);
-        m_filePathPauseFlagMap.erase(filePath);
         return;
     }
-    if(m_filePathPauseFlagMap.at(filePath).getStopWorkFlag()){
-        std::lock_guard lock(m_filePathPauseFlagMapMutex);
-        m_filePathPauseFlagMap.erase(filePath);
+    if(m_stopWorkFlag){
         listner.onStop();
         return;
         // нам тут навыерное уже ничего не нужно 
     }
-    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    m_filePathPauseFlagMap.erase(filePath);
     listner.onLoadComplete(filePath, dataBuffer);
 }
 
 void FileManager::PImpl::pause(const std::string& filePath, FileIOListener& listener)
 {
-    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    auto elmentToPouse = m_filePathPauseFlagMap.find(filePath);
-    if(elmentToPouse == m_filePathPauseFlagMap.end())
+    std::lock_guard lock(m_fileManagerMutex);
+    if(m_pausFlag == true || m_stopWorkFlag)
     {
-        //TODO: какая тут должна быть ошибка
-        listener.onIOError("", FileIOListener::FileDNExist);
+        listener.onIOError("", FileIOListener::FileWriteError);
         return;
     }
-    if((*elmentToPouse).second.getStopWorkFlag() == true || (*elmentToPouse).second.getPauseFlag() == true)
-    {
-        listener.onIOError("", FileIOListener::FileDNExist);
-        return;
-    }
-    (*elmentToPouse).second.setPauseFlag(true);
+    m_pausFlag = true;
+    listener.onPause();
 }
 
 void FileManager::PImpl::resume(const std::string& filePath, FileIOListener& listener)
 {
-    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    auto elementToResume = m_filePathPauseFlagMap.find(filePath);
-
-    if(elementToResume == m_filePathPauseFlagMap.end())
-    {   
-        listener.onIOError("", FileIOListener::FileDNExist);
-        return;
-    }
-    if((*elementToResume).second.getStopWorkFlag() == true || (*elementToResume).second.getPauseFlag() == true)
-    {
-        listener.onIOError("", FileIOListener::FileDNExist);
-        return;
-    }
-    (*elementToResume).second.setPauseFlag(false);
+    m_pausFlag = false;
     m_pauseCondition.notify_one();
+    listener.onResume();
 }
 
 void FileManager::PImpl::stopWork(const std::string& filePath, FileIOListener&listener)
 {
-    std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    auto elmentToStop = m_filePathPauseFlagMap.find(filePath);
-    if(elmentToStop == m_filePathPauseFlagMap.end())
-    {
-        //TODO: какая тут должна быть ошибка
-        listener.onIOError("", FileIOListener::FileDNExist);
-        return;
-    }
-    if((*elmentToStop).second.getStopWorkFlag() == true)
-    {
-        //TODO: какая тут должна быть ошибка
-        listener.onIOError("", FileIOListener::FileDNExist);
-        return;
-    }
-    (*elmentToStop).second.setStopWorkFlag(true);
+    m_pausFlag = true;
+    m_pauseCondition.notify_one();
 }
 
 void FileManager::PImpl::saveFile(const std::string& filePath,
@@ -265,23 +179,15 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
                                 const bool isRewrite,
                                 FileIOListener& listener
                                 )
-{
-    // std::lock_guard lock(m_filePathPauseFlagMapMutex);
-    // if(m_filePathPauseFlagMap.emplace(filePath, false).second == false)
-    // {
-    //     // TODO: определиться с ошибкой для колбэка
-    //     listener.onIOError("", FileIOListener::FileUnavailable);
-    //     return;
-    // }
-    
-    // std::thread SaveThread(&FileManager::PImpl::saveFileFunction,
-    //                         this,
-    //                         std::ref(filePath),
-    //                         std::ref(dataBuffer),
-    //                         std::ref(isRewrite),
-    //                         std::ref(listener)
-    //                     );
-    // SaveThread.detach();
+{    
+    std::thread SaveThread(&FileManager::PImpl::saveFileFunction,
+                            this,
+                            std::ref(filePath),
+                            std::ref(dataBuffer),
+                            std::ref(isRewrite),
+                            std::ref(listener)
+                        );
+    SaveThread.detach();
 }
 
 void FileManager::PImpl::saveFileFunction(const std::string& filePath,
@@ -290,39 +196,57 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                                   FileIOListener& listener
                                   )
 {
-            // listener.onIOStart(filePath);
-            // // Saving file here
-            // std::ofstream file(filePath);
+            // Saving file here
+            std::ofstream file(filePath);
         
-            // file.close();
-            // file.open(filePath);
+            file.close();
+            file.open(filePath);
 
-            // if (!file.is_open())
-            // {
-            //     if (std::filesystem::exists(filePath))
-            //     {
-            //         listener.onIOError(filePath, FileIOListener::FileUnavailable);
-            //         return;
-            //     }
+            if (!file.is_open())
+            {
+                if (std::filesystem::exists(filePath))
+                {
+                    listener.onIOError(filePath, FileIOListener::FileUnavailable);
+                    return;
+                }
 
-            // }
+            }
 
 
-            // if(std::filesystem::exists(filePath) && isRewrite == false)
-            // {
-            //     listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
-            //     return;
-            // }
+            if(std::filesystem::exists(filePath) && isRewrite == false)
+            {
+                listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
+                return;
+            }
 
-            // file << dataBuffer;
+            const float percentage = static_cast<float>(m_chunkSize) * static_cast<float>(dataBuffer.size()) / 100.0;
+            float percentageRead = 0;
+            listener.onIOStart(filePath);
+
+            for(size_t i = 0; i < dataBuffer.size(); i += m_chunkSize)
+            {
+                std::unique_lock lock(m_fileManagerMutex);
+                m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ](){return (a || b);});
+                lock.unlock();
+                if(m_stopWorkFlag)
+                    break;
+                file.write(dataBuffer.data() + i, m_chunkSize);
+                if (file.fail())
+                {
+                    listener.onIOError(filePath, FileIOListener::FileWriteError);
+                        return;
+                }
+                percentageRead += percentage;
+                listener.onProgress(percentageRead);
+            }
+
+            if(m_stopWorkFlag)
+            {
+                listener.onStop();
+                return;
+            }
             
-            // if (file.fail())
-            // {
-            //     listener.onIOError(filePath, FileIOListener::FileWriteError);
-            //         return;
-            // }
-            
-            // listener.onSaveComplete(filePath);
+            listener.onSaveComplete(filePath);
 }
 
 
