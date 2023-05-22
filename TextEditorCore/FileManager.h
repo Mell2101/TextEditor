@@ -36,11 +36,11 @@ public:
         FileIOListener& listener
     );
 
-    void pause(const std::string& filePath, FileIOListener&);
+    void pause(FileIOListener&);
 
-    void resume(const std::string& filePath, FileIOListener&);
+    void resume(FileIOListener&);
 
-    void stopWork(const std::string& filePath, FileIOListener&);
+    void stopWork(FileIOListener&);
     
 };
 

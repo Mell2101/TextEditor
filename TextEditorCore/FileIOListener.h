@@ -15,7 +15,8 @@ public:
     };
 
 public:
-    virtual ~FileIOListener();
+    FileIOListener(){};
+    virtual ~FileIOListener(){};
 
     virtual void onIOStart(const std::string& filename) = 0;
     virtual void onIOError(const std::string& failedArguments, FileIOErrorsEnum) = 0;

@@ -35,6 +35,7 @@ add_compile_options(
     -Wno-unknown-pragmas
 )
 
+find_package(Threads REQUIRED)
 
 add_library(TextEditorCoreLib STATIC
     FileManager.h
@@ -42,6 +43,10 @@ add_library(TextEditorCoreLib STATIC
     
     TextManager.h
     TextManager.cpp
+)
+
+target_link_libraries(TextEditorCoreLib
+    PRIVATE Threads::Threads
 )
 
 target_include_directories(TextEditorCoreLib PUBLIC .)
