@@ -198,49 +198,144 @@ TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--sav
 
 TEST_CASE("FileManager::loadFile()--loadSuccess", "[FileManager::loadFile()--loadSuccess]")
 {
-    for(size_t i = 0; i < 50; i++){
-        bool isLoadStarted = false;
-        std::string initFileName = "loadFileTest.txt";
-        std::string initDataBuffer = "1234676";
+    bool isLoadStarted = false;
+    std::string initFileName = "loadFileTest.txt";
+    std::string initDataBuffer = "1234676";
+    std::condition_variable condition;
 
-        std::condition_variable condition;
+    bool isCanStop = false;
+    TestFileManagerListener testListener;
+    testListener.onProgressCallback = [](const size_t){};
+
+    testListener.onIOStartCallback = [&](const std::string& fileName)
+    {
+        isLoadStarted = true;
+        REQUIRE(initFileName == fileName);
+    };
+    testListener.onLoadCompleteCallback = [&](const std::string& fileName, std::string& dataBuffer )
+    {
+        REQUIRE(initFileName == fileName);
+        REQUIRE(isLoadStarted);                      
+        REQUIRE(initDataBuffer == dataBuffer);
+        remove(fileName.c_str());
+        isCanStop = true;
+        condition.notify_all();
+    };
+    testListener.onIOErrorCallback = [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+    {
+        REQUIRE(false);
+        isCanStop = true;
+        condition.notify_all();
+    };
+
+    TextEditorCore::FileManager fileManager;
+    for(size_t i = 0; i < 100; i++){
 
         std::ofstream testFile(initFileName);
         testFile << initDataBuffer;
         testFile.close();
-
-        TestFileManagerListener testListener;
-        bool isCanStop = false;
-        testListener.onProgressCallback = [](const size_t){};
-
-        testListener.onIOStartCallback = [&](const std::string& fileName)
-        {
-            isLoadStarted = true;
-            REQUIRE(initFileName == fileName);
-        };
-        testListener.onLoadCompleteCallback = [&](const std::string& fileName, std::string& dataBuffer )
-        {
-            REQUIRE(initFileName == fileName);
-            REQUIRE(isLoadStarted);                      
-            REQUIRE(initDataBuffer == dataBuffer);
-            remove(fileName.c_str());
-            isCanStop = true;
-            condition.notify_all();
-        };
-        testListener.onIOErrorCallback = [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
-        {
-            REQUIRE(false);
-            isCanStop = true;
-            condition.notify_all();
-        };
-
-        TextEditorCore::FileManager fileManager;
+        isCanStop = false;
         fileManager.loadFile(initFileName, initDataBuffer, testListener);
 
         std::mutex mtx;
         std::unique_lock lock(mtx);
-        condition.wait(lock, [](){return true;});
+        condition.wait(lock, [&](){return isCanStop;});
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+TEST_CASE("FileManager::pause()--loadSuccess", "[FileManager::pause()--loadSuccess]")
+{
+
+    std::atomic<int> testValue(0);
+    std::atomic<bool> isContinueThread = false;
+    std::atomic<bool> isContinueTest = false;
+    std::condition_variable condition;
+    std::mutex mtx;
+
+    std::string initFileName = "loadFileTest.txt";
+    std::string initDataBuffer = "1234567";
+    
+    TestFileManagerListener testListener;
+    testListener.onIOStartCallback =
+        [&](const std::string& filename)
+        {
+            testValue = 0;
+            isContinueTest = true;
+
+            condition.notify_one();
+            std::unique_lock lock(mtx);
+            condition.wait(lock, [&](){return isContinueThread.load() == true;});
+            isContinueThread = false;
+        };
+    testListener.onPauseCallback = 
+        [&]()
+        {
+            REQUIRE(testValue == 0);
+            testValue = 1;
+            isContinueTest = true;
+            condition.notify_one();
+        };
+    testListener.onResumeCallback = 
+        [&]()
+        {
+            REQUIRE(testValue == 1);
+            testValue = 2;
+        };
+    testListener.onLoadCompleteCallback = 
+        [&](const std::string& fileName, std::string& dataBuffer)
+        {
+            remove(fileName.c_str());
+            REQUIRE(testValue == 2);
+            isContinueTest = true;
+            condition.notify_one();
+        };
+    testListener.onIOErrorCallback = 
+        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        {
+            REQUIRE(error == 50);
+            condition.notify_one();
+            exit(0);
+        };
+    testListener.onProgressCallback = [](const size_t){};
+
+    TextEditorCore::FileManager fileManager;
+
+    for(size_t i = 0; i < 100; i++){
+        std::ofstream testFile(initFileName);
+        testFile << initDataBuffer;
+        testFile.close();
+
+        fileManager.loadFile(initFileName, initDataBuffer, testListener);
+        
+        {
+            //whait until onIOStartCallback
+            std::unique_lock lock(mtx);
+            condition.wait(lock, [&](){return isContinueTest.load() == true;});
+            isContinueTest = false;
+        }
+
+        fileManager.pause(testListener);
+        isContinueThread = true;
+        condition.notify_one();
+
+        {
+            //whait until onIOLoadPauseCallback 
+            std::unique_lock lock(mtx);
+            condition.wait(lock, [&](){return isContinueTest.load() == true;});
+            isContinueTest = false;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        fileManager.resume(testListener);
+
+        {
+            //whait until onIOLoadCompliteCallback 
+            std::unique_lock lock(mtx);
+            condition.wait(lock, [&](){return isContinueTest == true;});
+            isContinueTest = false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 

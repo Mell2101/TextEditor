@@ -119,7 +119,8 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
             {
                 listner.onPause();
                 std::unique_lock lock(m_fileManagerMutex);
-                m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ](){return (a || !b);});
+                m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
+                    {return (a->load() || !b->load());});
                 listner.onResume();
                 if(m_stopWorkFlag)
                     break;
@@ -142,11 +143,10 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         listner.onIOError(filePath, FileIOListener::FileUnavailable);
         return;
     }
-
+    
     if(m_stopWorkFlag){
         listner.onStop();
         return;
-        // нам тут навыерное уже ничего не нужно 
     }
     listner.onLoadComplete(filePath, dataBuffer);
 }
@@ -186,17 +186,14 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
 {    
     if(isRewrite == false)
     {
-        std::ofstream file(filePath, std::fstream::out);
-        file.close();
-        // listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
-        // return;
+        listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
+        return;
     }
     if(!std::filesystem::exists(filePath))
     {
         listener.onIOError(filePath, FileIOListener::FileDNExist);
         return;
     }
-    // saveFileFunction(filePath, dataBuffer, isRewrite, listener);
     std::thread SaveThread(&FileManager::PImpl::saveFileFunction,
                             this,
                             std::ref(filePath),
@@ -213,57 +210,58 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                                   FileIOListener& listener
                                   )
 {
-            std::ofstream file(filePath);
-        
-            if (!file.is_open())
-            {
-                listener.onIOError(filePath, FileIOListener::FileUnavailable);
-                return;
-            }
+    std::ofstream file(filePath);
 
-            listener.onIOStart(filePath);
+    if (!file.is_open())
+    {
+        listener.onIOError(filePath, FileIOListener::FileUnavailable);
+        return;
+    }
 
-            size_t chunkSize = m_chunkSize;
-            if(dataBuffer.size() < m_chunkSize)
-                chunkSize = dataBuffer.size();
+    listener.onIOStart(filePath);
 
-            const float percentage = static_cast<float>(chunkSize) * static_cast<float>(dataBuffer.size()) / 100.0;
-            float percentageRead = 0;
+    size_t chunkSize = m_chunkSize;
+    if(dataBuffer.size() < m_chunkSize)
+        chunkSize = dataBuffer.size();
 
-            for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)
-            {
-                if(m_stopWorkFlag)
-                    break;
-                if(m_pausFlag)
-                {
-                    listener.onPause();
-                    std::unique_lock lock(m_fileManagerMutex);
-                    m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ](){return (a || !b);});
-                    listener.onResume();
-                    if(m_stopWorkFlag)
-                        break;
-                }
-                if(chunkSize > dataBuffer.size() - i)
-                    chunkSize = dataBuffer.size() - i;
-                    
-                file.write(dataBuffer.data() + i, chunkSize);
+    const float percentage = static_cast<float>(chunkSize) * static_cast<float>(dataBuffer.size()) / 100.0;
+    float percentageRead = 0;
 
-                if (file.fail())
-                {
-                    listener.onIOError(filePath, FileIOListener::FileWriteError);
-                    return;
-                }
-                percentageRead += percentage;
-                listener.onProgress(percentageRead);
-            }
-
+    for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)
+    {
+        if(m_stopWorkFlag)
+            break;
+        if(m_pausFlag)
+        {
+            listener.onPause();
+            std::unique_lock lock(m_fileManagerMutex);
+            m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
+                {return (a->load() || !b->load());});
+            listener.onResume();
             if(m_stopWorkFlag)
-            {
-                listener.onStop();
-                return;
-            }
-            file.close();
-            listener.onSaveComplete(filePath);
+                break;
+        }
+        if(chunkSize > dataBuffer.size() - i)
+            chunkSize = dataBuffer.size() - i;
+            
+        file.write(dataBuffer.data() + i, chunkSize);
+
+        if (file.fail())
+        {
+            listener.onIOError(filePath, FileIOListener::FileWriteError);
+            return;
+        }
+        percentageRead += percentage;
+        listener.onProgress(percentageRead);
+    }
+
+    if(m_stopWorkFlag)
+    {
+        listener.onStop();
+        return;
+    }
+    file.close();
+    listener.onSaveComplete(filePath);
 }
 
 
