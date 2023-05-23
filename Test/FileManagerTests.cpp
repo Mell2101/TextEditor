@@ -141,53 +141,57 @@ TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()-
 
 TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--saveSuccess]")
 {
-    for(size_t i = 0; i < 50; i++){
-        bool isSaveStarted = false;
-        bool isRewrite = false;
-        const std::string initFileName = "saveFileTest.txt";
-        std::string dataBuffer = "1234567";
-        
-        std::condition_variable condition;
+    bool isSaveStarted = false;
+    bool isRewrite = true;
+    const std::string initFileName = "saveFileTest.txt";
+    std::string dataBuffer = "1234567";
 
-        TextEditorCore::FileManager fileManager;
-        TestFileManagerListener testListener;
-        bool canStop = false;
-        testListener.onProgressCallback = [](const size_t){};
-        testListener.onIOStartCallback = [&](const std::string& fileName)
-            {
-                isSaveStarted = true;
-                REQUIRE(initFileName == fileName);
-                // condition.notify_all();
-            };
-        testListener.onSaveCompleteCallback = [&](const std::string& fileName)
-            {
-                REQUIRE(isSaveStarted);
-                REQUIRE(initFileName == fileName);
-                std::fstream file(fileName);
-                
-                if (!file.is_open())
-                {
-                    REQUIRE(false);
-                }                             
-                
-                std::string buffer;
-                file >> buffer;
-                file.close();                               
-                remove(fileName.c_str());
+    std::condition_variable condition;
 
-                REQUIRE(buffer == dataBuffer);
-                canStop = true;
-                condition.notify_all();
-            };
-        testListener.onIOErrorCallback = 
-            [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+    TextEditorCore::FileManager fileManager;
+    bool canStop = false;
+    
+    TestFileManagerListener testListener;
+    testListener.onProgressCallback = [](const size_t){};
+    testListener.onIOStartCallback = [&](const std::string& fileName)
+        {
+            isSaveStarted = true;
+            REQUIRE(initFileName == fileName);
+            // condition.notify_all();
+        };
+    testListener.onSaveCompleteCallback = [&](const std::string& fileName)
+        {
+            REQUIRE(isSaveStarted);
+            REQUIRE(initFileName == fileName);
+            std::fstream file(fileName);
+            
+            if (!file.is_open())
             {
-                REQUIRE(initFileName == fileName);
                 REQUIRE(false);
-                canStop = true;
-                condition.notify_all();
-            };
+            }                             
+            
+            std::string buffer;
+            file >> buffer;
+            file.close();                               
+            remove(fileName.c_str());
 
+            REQUIRE(buffer == dataBuffer);
+            canStop = true;
+            condition.notify_all();
+        };
+
+    testListener.onIOErrorCallback = 
+        [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+        {
+            REQUIRE(initFileName == fileName);
+            REQUIRE(false);
+            canStop = true;
+            condition.notify_all();
+        };
+
+    for(size_t i = 0; i < 100; i++)
+    {
+        canStop = false;
         fileManager.saveFile(initFileName, dataBuffer, isRewrite, testListener);
         std::mutex mtx;
         std::unique_lock lock(mtx);

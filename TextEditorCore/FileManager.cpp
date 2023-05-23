@@ -210,7 +210,7 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                                   FileIOListener& listener
                                   )
 {
-    std::ofstream file(filePath);
+    std::ofstream file(filePath, std::ios::out | std::ios::trunc);
 
     if (!file.is_open())
     {
