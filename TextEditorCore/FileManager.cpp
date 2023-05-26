@@ -7,7 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <unordered_map>
-
+ 
 
 #include <thread>
 #include <mutex>
@@ -42,7 +42,6 @@ private:
 
     void saveFileFunction(const std::string& filePath,
                         const std::string& dataBuffer,
-                        const bool isRewrite,
                         FileIOListener& listener
                         );
 
@@ -105,7 +104,7 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         file.seekg (0, file.end);
         int length = static_cast<int>(file.tellg());
         file.seekg (0, file.beg);
-        const float percentage = static_cast<float>(m_chunkSize) * static_cast<float>(length) / 100.0;
+        const float percentage = static_cast<float>(m_chunkSize)  / (static_cast<float>(length) / 100.0);
         float percentageRead = 0;
 
         dataBuffer.clear();
@@ -180,25 +179,20 @@ void FileManager::PImpl::stopWork(FileIOListener&listener)
 
 void FileManager::PImpl::saveFile(const std::string& filePath,
                                 const std::string& dataBuffer,
-                                const bool isRewrite,
+                                const bool isOverWriteAllowed,
                                 FileIOListener& listener
                                 )
 {    
-    if(isRewrite == false)
+    if(isOverWriteAllowed == false && std::filesystem::exists(filePath))
     {
         listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
         return;
     }
-    if(!std::filesystem::exists(filePath))
-    {
-        listener.onIOError(filePath, FileIOListener::FileDNExist);
-        return;
-    }
+
     std::thread SaveThread(&FileManager::PImpl::saveFileFunction,
                             this,
                             std::ref(filePath),
                             std::ref(dataBuffer),
-                            std::ref(isRewrite),
                             std::ref(listener)
                         );
     SaveThread.detach();
@@ -206,7 +200,6 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
 
 void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                                   const std::string& dataBuffer,
-                                  const bool isRewrite,
                                   FileIOListener& listener
                                   )
 {
@@ -224,7 +217,7 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
     if(dataBuffer.size() < m_chunkSize)
         chunkSize = dataBuffer.size();
 
-    const float percentage = static_cast<float>(chunkSize) * static_cast<float>(dataBuffer.size()) / 100.0;
+    const float percentage = static_cast<float>(chunkSize) / (static_cast<float>(dataBuffer.size()) / 100.0);
     float percentageRead = 0;
 
     for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)

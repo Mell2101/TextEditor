@@ -20,7 +20,7 @@ public:
 
     virtual void onIOStart(const std::string& filename) = 0;
     virtual void onIOError(const std::string& failedArguments, FileIOErrorsEnum) = 0;
-    virtual void onProgress(const size_t percent) = 0;
+    virtual void onProgress(const float percent) = 0;
     virtual void onPause() = 0;
     virtual void onResume() = 0;
     virtual void onStop() = 0;
