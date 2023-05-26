@@ -6,12 +6,15 @@ class FileIOListener
 public:
     enum FileIOErrorsEnum
     {
-        NoError = 0,
-        FileDNExist = 1,
-        FileUnavailable = 2,
-        FileWriteError = 3,
-        FileReWriteTaboo = 4,
-        FileReadError = 5
+        NoError,
+        FileDNExist,
+        FileUnavailable,
+        FileWriteError,
+        FileReWriteTaboo,
+        FileReadError,
+        PauseError,
+        ResumeError,
+        StopError,
     };
 
 public:

@@ -120,9 +120,9 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                 std::unique_lock lock(m_fileManagerMutex);
                 m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
                     {return (a->load() || !b->load());});
-                listner.onResume();
                 if(m_stopWorkFlag)
                     break;
+                listner.onResume();
             }
             file.read(dataBuffer.data() + file.tellg(), m_chunkSize);
             if(file.fail() && !file.eof())
@@ -154,7 +154,7 @@ void FileManager::PImpl::pause(FileIOListener& listener)
 {
     if(m_pausFlag == true || m_stopWorkFlag)
     {
-        listener.onIOError("", FileIOListener::FileWriteError);
+        listener.onIOError("pause", FileIOListener::PauseError);
         return;
     }
     m_pausFlag = true;
@@ -164,7 +164,7 @@ void FileManager::PImpl::resume(FileIOListener& listener)
 {
     if(!m_pausFlag && m_stopWorkFlag)
     {
-        listener.onIOError("", FileIOListener::FileUnavailable);
+        listener.onIOError("resume", FileIOListener::ResumeError);
         return;
     }
     m_pausFlag = false;
@@ -173,6 +173,7 @@ void FileManager::PImpl::resume(FileIOListener& listener)
 
 void FileManager::PImpl::stopWork(FileIOListener&listener)
 {
+
     m_pausFlag = true;
     m_pauseCondition.notify_one();
 }
@@ -230,9 +231,9 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
             std::unique_lock lock(m_fileManagerMutex);
             m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
                 {return (a->load() || !b->load());});
-            listener.onResume();
             if(m_stopWorkFlag)
                 break;
+            listener.onResume();
         }
         if(chunkSize > dataBuffer.size() - i)
             chunkSize = dataBuffer.size() - i;
