@@ -152,7 +152,7 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
 
 void FileManager::PImpl::pause(FileIOListener& listener)
 {
-    if(m_pausFlag == true || m_stopWorkFlag)
+    if(m_pausFlag == true || m_stopWorkFlag == true)
     {
         listener.onIOError("pause", FileIOListener::PauseError);
         return;
