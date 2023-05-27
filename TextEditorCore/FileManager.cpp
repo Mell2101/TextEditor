@@ -94,7 +94,6 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                                         FileIOListener& listner
                                         )
 {
-
     std::ifstream file(filePath);
 
     if (file.is_open())
@@ -107,11 +106,13 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         const float percentage = static_cast<float>(m_chunkSize)  / (static_cast<float>(length) / 100.0);
         float percentageRead = 0;
 
+
         dataBuffer.clear();
         dataBuffer.resize(length);
 
-        while(!file.eof())
-        {                
+        size_t chunkSize = m_chunkSize;
+        for(size_t i = 0; i < length; i += chunkSize)
+        {
             if(m_stopWorkFlag)
                 break;
             if(m_pausFlag)
@@ -124,12 +125,16 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                     break;
                 listner.onResume();
             }
-            file.read(dataBuffer.data() + file.tellg(), m_chunkSize);
-            if(file.fail() && !file.eof())
+            if(chunkSize > length - i)
+                chunkSize = length - i;
+            file.read(dataBuffer.data() + i, chunkSize);
+
+            if(file.fail())
             {
                 listner.onIOError(filePath, FileIOListener::FileReadError);
                 return;
             }
+            
             percentageRead += percentage;
             listner.onProgress(percentageRead);
 #ifdef  TESTING
@@ -147,6 +152,7 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         listner.onStop();
         return;
     }
+    file.close();
     listner.onLoadComplete(filePath, dataBuffer);
 }
 
