@@ -22,8 +22,9 @@ namespace TextEditorCore
 struct FileManager::PImpl
 {
 private:
-    std::atomic<bool> m_pausFlag = false;
-    std::atomic<bool> m_stopWorkFlag = false;
+    std::atomic_bool m_pausFlag = false;
+    std::atomic_bool m_stopWorkFlag = false;
+    std::atomic_bool m_isWorkingFlag = false;
     std::mutex m_fileManagerMutex;
     std::condition_variable m_pauseCondition;
     const size_t m_chunkSize;
@@ -98,12 +99,17 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
 
     if (file.is_open())
     {
+        m_isWorkingFlag = true;
         listner.onIOStart(filePath);
         // get length of file:
         file.seekg (0, file.end);
         int length = static_cast<int>(file.tellg());
         file.seekg (0, file.beg);
-        const float percentage = static_cast<float>(m_chunkSize)  / (static_cast<float>(length) / 100.0);
+
+        float percentage = static_cast<float>(m_chunkSize)  / (static_cast<float>(length) / 100.0);
+        if(m_chunkSize > length)
+            percentage = 100.0;
+
         float percentageRead = 0;
 
 
@@ -117,13 +123,16 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                 break;
             if(m_pausFlag)
             {
+                m_isWorkingFlag = false;
                 listner.onPause();
                 std::unique_lock lock(m_fileManagerMutex);
                 m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
                     {return (a->load() || !b->load());});
                 if(m_stopWorkFlag)
                     break;
+                m_isWorkingFlag = true;
                 listner.onResume();
+                
             }
             if(chunkSize > length - i)
                 chunkSize = length - i;
@@ -131,6 +140,7 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
 
             if(file.fail())
             {
+                m_isWorkingFlag.store(false);
                 listner.onIOError(filePath, FileIOListener::FileReadError);
                 return;
             }
@@ -144,21 +154,31 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
     }
     else
     {
+        m_isWorkingFlag.store(false);
         listner.onIOError(filePath, FileIOListener::FileUnavailable);
         return;
     }
     
     if(m_stopWorkFlag){
+        m_isWorkingFlag.store(false);
+        m_stopWorkFlag.store(false);
         listner.onStop();
         return;
     }
+    if(m_pausFlag)
+    {
+        m_pausFlag.store(false);
+        listner.onIOError("pause()", FileIOListener::PauseError);
+    }
+
     file.close();
+    m_isWorkingFlag = false;
     listner.onLoadComplete(filePath, dataBuffer);
 }
 
 void FileManager::PImpl::pause(FileIOListener& listener)
 {
-    if(m_pausFlag == true || m_stopWorkFlag == true)
+    if(m_pausFlag == true || m_stopWorkFlag == true || m_isWorkingFlag == false)
     {
         listener.onIOError("pause", FileIOListener::PauseError);
         return;
@@ -168,7 +188,12 @@ void FileManager::PImpl::pause(FileIOListener& listener)
 
 void FileManager::PImpl::resume(FileIOListener& listener)
 {
-    if(!m_pausFlag && m_stopWorkFlag)
+    if(!m_pausFlag || m_stopWorkFlag || m_isWorkingFlag == true)
+    {
+        listener.onIOError("resume", FileIOListener::ResumeError);
+        return;
+    }
+    if(m_pausFlag == false && m_isWorkingFlag == false)
     {
         listener.onIOError("resume", FileIOListener::ResumeError);
         return;
@@ -179,8 +204,13 @@ void FileManager::PImpl::resume(FileIOListener& listener)
 
 void FileManager::PImpl::stopWork(FileIOListener&listener)
 {
-
-    m_pausFlag = true;
+    if(m_stopWorkFlag == true || m_isWorkingFlag == false)
+    {
+        listener.onIOError("stopWork", FileIOListener::StopError);
+        return;
+    }
+    m_pausFlag.store(false);
+    m_stopWorkFlag.store(true);
     m_pauseCondition.notify_one();
 }
 
@@ -214,10 +244,11 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
 
     if (!file.is_open())
     {
+        m_isWorkingFlag = false;
         listener.onIOError(filePath, FileIOListener::FileUnavailable);
         return;
     }
-
+    m_isWorkingFlag = true;
     listener.onIOStart(filePath);
 
     size_t chunkSize = m_chunkSize;
@@ -233,6 +264,7 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
             break;
         if(m_pausFlag)
         {
+            m_isWorkingFlag = false;
             listener.onPause();
             std::unique_lock lock(m_fileManagerMutex);
             m_pauseCondition.wait(lock, [a = &m_stopWorkFlag , b = &m_pausFlag ]()
@@ -240,6 +272,7 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
             if(m_stopWorkFlag)
                 break;
             listener.onResume();
+            m_isWorkingFlag = true;
         }
         if(chunkSize > dataBuffer.size() - i)
             chunkSize = dataBuffer.size() - i;
@@ -248,6 +281,7 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
 
         if (file.fail())
         {
+            m_isWorkingFlag = false;
             listener.onIOError(filePath, FileIOListener::FileWriteError);
             return;
         }
@@ -257,10 +291,18 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
 
     if(m_stopWorkFlag)
     {
+        m_isWorkingFlag = false;
+        m_stopWorkFlag = false;
         listener.onStop();
         return;
     }
+    if(m_pausFlag)
+    {
+        m_pausFlag.store(false);
+        listener.onIOError("pause()", FileIOListener::PauseError);
+    }
     file.close();
+    m_isWorkingFlag = false;
     listener.onSaveComplete(filePath);
 }
 
