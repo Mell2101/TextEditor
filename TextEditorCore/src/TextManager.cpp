@@ -1,4 +1,4 @@
-#include "TextManager.h"
+#include <TextEditorCore/TextManager.h>
 
 namespace TextEditorCore
 {

@@ -1,13 +1,9 @@
-#include "FileManager.h"
+#include <TextEditorCore/FileManager.h>
 
-
-/* -------------------------------------------------------------------------- */
-//PIMPL
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <unordered_map>
- 
 
 #include <thread>
 #include <mutex>
@@ -15,6 +11,8 @@
 #include <condition_variable>
 
 #include <chrono>
+
+/* -------------------------------------------------------------------------- */
 
 namespace TextEditorCore
 {

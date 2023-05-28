@@ -1,9 +1,9 @@
-#include <FileManager.h>
+#include <TextEditorCore/FileManager.h>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
 #include <catch2/catch_all.hpp>
-#include "../TextEditorCore/FileIOListener.h"
+#include <TextEditorCore/FileIOListener.h>
 
 #include <functional>
 #include <thread>

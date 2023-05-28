@@ -1,4 +1,4 @@
-#include <TextManager.h>
+#include <TextEditorCore/TextManager.h>
 #include <catch2/catch_all.hpp>
 
 TEST_CASE("TextManager::TextManager()", "[TextManager::TextManager()]")
