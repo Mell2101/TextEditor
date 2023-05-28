@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-class FileIOListener
+class IFileIOListener
 {
 public:
     enum FileIOErrorsEnum
@@ -18,8 +18,8 @@ public:
     };
 
 public:
-    FileIOListener(){};
-    virtual ~FileIOListener(){};
+    IFileIOListener() = default;
+    virtual ~IFileIOListener(){};
 
     virtual void onIOStart(const std::string& filename) = 0;
     virtual void onIOError(const std::string& failedArguments, FileIOErrorsEnum) = 0;

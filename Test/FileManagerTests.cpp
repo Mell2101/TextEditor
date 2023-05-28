@@ -15,11 +15,11 @@
 #include <iostream>
 #include <algorithm> 
 
-class TestFileManagerListener: public FileIOListener
+class TestFileManagerListener: public IFileIOListener
 {
 public:
     std::function<void (const std::string& )> onIOStartCallback = [](const std::string& ){printf("onIOStartCallback\n");};
-    std::function<void (const std::string& , FileIOListener::FileIOErrorsEnum)> onIOErrorCallback = [](const std::string& , FileIOListener::FileIOErrorsEnum){printf("onIOErrorCallback\n");};
+    std::function<void (const std::string& , IFileIOListener::FileIOErrorsEnum)> onIOErrorCallback = [](const std::string& , IFileIOListener::FileIOErrorsEnum){printf("onIOErrorCallback\n");};
     std::function<void (const float)> onProgressCallback = [](const float ){printf("onProgressCallback\n");};
     std::function<void (const std::string&)> onPauseCallback = [](const std::string&){printf("onPauseCallback\n");};
     std::function<void (const std::string& fileName)> onResumeCallback = [](const std::string& fileName){printf("onResumeCallback\n");};
@@ -85,7 +85,7 @@ TEST_CASE("FileManager::loadFile()--FileDNExist", "[FileManager::loadFile()--Fil
         [&](const std::string& fileName, int errorCode)
         {
             REQUIRE(initFileName == fileName);
-            REQUIRE(errorCode == FileIOListener::FileDNExist);
+            REQUIRE(errorCode == IFileIOListener::FileDNExist);
             isEnded = true;
             condition.notify_all();
         };
@@ -130,10 +130,10 @@ TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()-
         canStop = true;
         condition.notify_all();
     };
-    testListener.onIOErrorCallback = [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+    testListener.onIOErrorCallback = [&](const std::string& fileName, IFileIOListener::FileIOErrorsEnum errorCode)
     {
         REQUIRE(initFileName == fileName);
-        REQUIRE(errorCode == FileIOListener::FileUnavailable);
+        REQUIRE(errorCode == IFileIOListener::FileUnavailable);
         canStop = true;
         condition.notify_all();
     };
@@ -187,7 +187,7 @@ TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--sav
             condition.notify_all();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+        [&](const std::string& fileName, IFileIOListener::FileIOErrorsEnum errorCode)
         {
             REQUIRE(initFileName == fileName);
             REQUIRE(false);
@@ -233,7 +233,7 @@ TEST_CASE("FileManager::loadFile()--loadSuccess", "[FileManager::loadFile()--loa
         isCanStop = true;
         condition.notify_all();
     };
-    testListener.onIOErrorCallback = [&](const std::string& fileName, FileIOListener::FileIOErrorsEnum errorCode)
+    testListener.onIOErrorCallback = [&](const std::string& fileName, IFileIOListener::FileIOErrorsEnum errorCode)
     {
         REQUIRE(false);
         isCanStop = true;
@@ -303,7 +303,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
             condition.notify_one();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
 
             REQUIRE(false);
@@ -401,7 +401,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
             condition.notify_one();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             REQUIRE(false);
             isContinueTest.store(true);
@@ -488,7 +488,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
             condition.notify_one();
         }; 
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             REQUIRE(false);
             isContinueTest.store(true);
@@ -541,7 +541,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
             condition.notify_one();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             remove(initFileName.c_str());
             REQUIRE(false);
@@ -601,9 +601,9 @@ TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError
             REQUIRE(false);
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
-            REQUIRE(error == FileIOListener::PauseError);
+            REQUIRE(error == IFileIOListener::PauseError);
         };
     
     TextEditorCore::FileManager fileManager;
@@ -629,9 +629,9 @@ TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeE
             REQUIRE(false);
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
-            REQUIRE(error == FileIOListener::ResumeError);
+            REQUIRE(error == IFileIOListener::ResumeError);
         };
     
     TextEditorCore::FileManager fileManager;
@@ -657,9 +657,9 @@ TEST_CASE("FileManager::stopWork()--stopWorkError", "[FileManager::stopWork()--s
             REQUIRE(false);
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
-            REQUIRE(error == FileIOListener::StopError);
+            REQUIRE(error == IFileIOListener::StopError);
         };
     
     TextEditorCore::FileManager fileManager;
@@ -714,7 +714,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::s
 
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             REQUIRE(false);
         };
@@ -799,7 +799,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
             condition.notify_all();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             REQUIRE(false);
         };
@@ -871,12 +871,12 @@ std::atomic<int> testValue(0);
             condition.notify_all();
         };
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             remove(initFileName.c_str());
             REQUIRE(testValue.load() == 2);
             testValue.store(0);
-            REQUIRE(error == FileIOListener::PauseError);
+            REQUIRE(error == IFileIOListener::PauseError);
         };
 
     TextEditorCore::FileManager fileManager;
@@ -951,12 +951,12 @@ std::atomic<int> testValue(0);
             condition.notify_all();
         };   
     testListener.onIOErrorCallback = 
-        [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
+        [&](const std::string& failedArguments, IFileIOListener::FileIOErrorsEnum error)
         {
             remove(initFileName.c_str());
             REQUIRE(testValue.load() == 2);
             testValue.store(0);
-            REQUIRE(error == FileIOListener::PauseError);
+            REQUIRE(error == IFileIOListener::PauseError);
         };
 
     TextEditorCore::FileManager fileManager;

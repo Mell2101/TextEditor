@@ -26,21 +26,21 @@ public:
     void loadFile(
         const std::string& filePath,
         std::string& dataBuffer,
-        FileIOListener& listner 
+        IFileIOListener& listner 
     );
 
     void saveFile(
         const std::string& filePath,
         const std::string& dataBuffer,
         const bool isRewrite,
-        FileIOListener& listener
+        IFileIOListener& listener
     );
 
-    void pause(const std::string& fileName, FileIOListener&);
+    void pause(const std::string& fileName, IFileIOListener&);
 
-    void resume(const std::string& fileName, FileIOListener&);
+    void resume(const std::string& fileName, IFileIOListener&);
 
-    void stopWork(const std::string& fileName, FileIOListener&);
+    void stopWork(const std::string& fileName, IFileIOListener&);
     
 };
 

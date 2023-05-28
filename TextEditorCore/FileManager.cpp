@@ -38,45 +38,45 @@ private:
     
     void loadFileFunction(const std::string& filePath,
                         std::string& dataBuffer,
-                        FileIOListener& listener
+                        IFileIOListener& listener
                         );
 
     void saveFileFunction(const std::string& filePath,
                         const std::string& dataBuffer,
-                        FileIOListener& listener
+                        IFileIOListener& listener
                         );
 
 public:
     void loadFile(const std::string& filePath,
                 std::string& dataBuffer,
-                FileIOListener& listner
+                IFileIOListener& listner
                 );
 
-    void resume(const std::string& fileName, FileIOListener&);
+    void resume(const std::string& fileName, IFileIOListener&);
     
-    void pause(const std::string&, FileIOListener&);
+    void pause(const std::string&, IFileIOListener&);
 
-    void stopWork(const std::string& fileName, FileIOListener&);
+    void stopWork(const std::string& fileName, IFileIOListener&);
     
     void saveFile(const std::string& filePath,
                 const std::string& dataBuffer,
                 const bool isRewrite,
-                FileIOListener& listener
+                IFileIOListener& listener
                 );
                   
-    FileIOListener::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad, bool isExist);
+    IFileIOListener::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad, bool isExist);
     
 };
 
 
 void FileManager::PImpl::loadFile(const std::string& filePath,
                                 std::string& dataBuffer,
-                                FileIOListener& listner
+                                IFileIOListener& listner
                                 )
 {
     if(!std::filesystem::exists(filePath))
     {
-        listner.onIOError(filePath, FileIOListener::FileDNExist);
+        listner.onIOError(filePath, IFileIOListener::FileDNExist);
         return;
     }
     std::thread loadThread(&FileManager::PImpl::loadFileFunction,
@@ -92,13 +92,13 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
 
 void FileManager::PImpl::loadFileFunction(const std::string& filePath,
                                         std::string& dataBuffer,
-                                        FileIOListener& listner
+                                        IFileIOListener& listner
                                         )
 {
     std::ifstream file(filePath);
     if (!file.is_open())
     {
-        listner.onIOError(filePath, FileIOListener::FileUnavailable);
+        listner.onIOError(filePath, IFileIOListener::FileUnavailable);
         return;
     }
 
@@ -138,7 +138,7 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
         {
             m_isWorkingAtomic.store(false);
             file.close();
-            listner.onIOError(filePath, FileIOListener::FileReadError);
+            listner.onIOError(filePath, IFileIOListener::FileReadError);
             return;
         }
         pos = file.tellg();
@@ -160,37 +160,37 @@ void FileManager::PImpl::loadFileFunction(const std::string& filePath,
     if(m_isPauseAtomic)
     {
         m_isPauseAtomic.store(false);
-        listner.onIOError(filePath, FileIOListener::PauseError);
+        listner.onIOError(filePath, IFileIOListener::PauseError);
     }
     listner.onLoadComplete(filePath, dataBuffer);
 }
 
-void FileManager::PImpl::pause(const std::string& fileName, FileIOListener& listener)
+void FileManager::PImpl::pause(const std::string& fileName, IFileIOListener& listener)
 {
     if(m_isPauseAtomic.load() || m_isStopAtomic.load() || !m_isWorkingAtomic.load())
     {
-        listener.onIOError(fileName, FileIOListener::PauseError);
+        listener.onIOError(fileName, IFileIOListener::PauseError);
         return;
     }
     m_isPauseAtomic.store(true);
 }
 
-void FileManager::PImpl::resume(const std::string& fileName, FileIOListener& listener)
+void FileManager::PImpl::resume(const std::string& fileName, IFileIOListener& listener)
 {
     if(!m_isPauseAtomic.load() || m_isStopAtomic.load())
     {
-        listener.onIOError(fileName, FileIOListener::ResumeError);
+        listener.onIOError(fileName, IFileIOListener::ResumeError);
         return;
     }
     m_isPauseAtomic.store(false);
     m_pauseCondition.notify_one();
 }
 
-void FileManager::PImpl::stopWork(const std::string& fileName,FileIOListener&listener)
+void FileManager::PImpl::stopWork(const std::string& fileName,IFileIOListener&listener)
 {
     if(m_isStopAtomic.load() || !m_isWorkingAtomic.load())
     {
-        listener.onIOError(fileName, FileIOListener::StopError);
+        listener.onIOError(fileName, IFileIOListener::StopError);
         return;
     }
     m_isPauseAtomic.store(false);
@@ -201,12 +201,12 @@ void FileManager::PImpl::stopWork(const std::string& fileName,FileIOListener&lis
 void FileManager::PImpl::saveFile(const std::string& filePath,
                                 const std::string& dataBuffer,
                                 const bool isOverWriteAllowed,
-                                FileIOListener& listener
+                                IFileIOListener& listener
                                 )
 {    
     if(isOverWriteAllowed == false && std::filesystem::exists(filePath))
     {
-        listener.onIOError(filePath, FileIOListener::FileReWriteTaboo);
+        listener.onIOError(filePath, IFileIOListener::FileReWriteTaboo);
         return;
     }
 
@@ -221,36 +221,29 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
 
 void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                                   const std::string& dataBuffer,
-                                  FileIOListener& listener
+                                  IFileIOListener& listener
                                   )
 {
     std::ofstream file(filePath, std::ios::out | std::ios::trunc);
 
     if (!file.is_open())
     {
-        listener.onIOError(filePath, FileIOListener::FileUnavailable);
+        listener.onIOError(filePath, IFileIOListener::FileUnavailable);
         return;
     }
     m_isWorkingAtomic.store(true);
     listener.onIOStart(filePath);
 
     size_t chunkSize = m_chunkSize;
-    if(dataBuffer.size() < m_chunkSize)
-        chunkSize = dataBuffer.size();
-
     size_t pos = 0;
-
-
-
-    for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)
+    while(pos < dataBuffer.size())
     {
-        if(m_isStopAtomic)
+        if(m_isStopAtomic.load())
         {
             break;
         }
-        if(m_isPauseAtomic)
+        if(m_isPauseAtomic.load())
         {
-            m_isWorkingAtomic = false;
             listener.onPause(filePath);
             std::unique_lock lock(m_pauseMutex);
             m_pauseCondition.wait(lock,
@@ -259,25 +252,23 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
                     return (m_isStopAtomic.load() || !m_isPauseAtomic.load());
                 }
             );
-            if(m_isStopAtomic)
-                break;
             listener.onResume(filePath);
-            m_isWorkingAtomic = true;
+            continue;
         }
-        if(chunkSize > dataBuffer.size() - i)
-            chunkSize = dataBuffer.size() - i;
-            
-        file.write(dataBuffer.data() + i, chunkSize);
+        if(chunkSize > dataBuffer.size() - pos)
+            chunkSize = dataBuffer.size() - pos;
+        file.write(dataBuffer.data() + pos, chunkSize);
 
         if (file.fail())
         {
             m_isWorkingAtomic = false;
             file.close();
-            listener.onIOError(filePath, FileIOListener::FileWriteError);
+            listener.onIOError(filePath, IFileIOListener::FileWriteError);
             return;
         }
-        
-        listener.onProgress(static_cast<float>(file.tellp()) / dataBuffer.size());
+
+        pos += chunkSize;
+        listener.onProgress(static_cast<float>(pos) / dataBuffer.size());
     }
 
     file.close();
@@ -285,15 +276,14 @@ void FileManager::PImpl::saveFileFunction(const std::string& filePath,
     
     if(m_isStopAtomic.load())
     {
-        m_isWorkingAtomic = false;
-        m_isStopAtomic = false;
+        m_isStopAtomic.store(false);
         listener.onStop(filePath);
         return;
     }
     if(m_isPauseAtomic.load())
     {
         m_isPauseAtomic.store(false);
-        listener.onIOError(filePath, FileIOListener::PauseError);
+        listener.onIOError(filePath, IFileIOListener::PauseError);
     }
     
     listener.onSaveComplete(filePath);
@@ -319,23 +309,23 @@ FileManager::~FileManager()
 void FileManager::loadFile(
     const std::string& filePath,
     std::string& dataBuffer,
-    FileIOListener& listner
+    IFileIOListener& listner
 )
 {
     pimpl->loadFile(filePath, dataBuffer, listner);
 }
 
-void FileManager::pause(const std::string& fileName,FileIOListener& listener)
+void FileManager::pause(const std::string& fileName,IFileIOListener& listener)
 {
     pimpl->pause(fileName, listener);
 }
 
-void FileManager::resume(const std::string& fileName, FileIOListener& listener)
+void FileManager::resume(const std::string& fileName, IFileIOListener& listener)
 {
     pimpl->resume(fileName, listener);
 }
 
-void FileManager::stopWork(const std::string& fileName, FileIOListener& listener)
+void FileManager::stopWork(const std::string& fileName, IFileIOListener& listener)
 {
     pimpl->stopWork(fileName, listener);
 }
@@ -343,7 +333,7 @@ void FileManager::stopWork(const std::string& fileName, FileIOListener& listener
 void FileManager::saveFile( const std::string& filePath,
                             const std::string& dataBuffer,
                             const bool isRewrite,
-                            FileIOListener& listener
+                            IFileIOListener& listener
                         )
 {
     pimpl->saveFile(filePath, dataBuffer, isRewrite, listener);
@@ -351,3 +341,40 @@ void FileManager::saveFile( const std::string& filePath,
 
 
 }// namespace TextEditorCore
+
+
+    // for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)
+    // {
+    //     if(m_isStopAtomic.load())
+    //     {
+    //         break;
+    //     }
+    //     if(m_isPauseAtomic.load())
+    //     {
+    //         listener.onPause(filePath);
+    //         std::unique_lock lock(m_pauseMutex);
+    //         m_pauseCondition.wait(lock,
+    //             [&]()
+    //             {
+    //                 return (m_isStopAtomic.load() || !m_isPauseAtomic.load());
+    //             }
+    //         );
+    //         if(m_isStopAtomic.load())
+    //             break;
+    //         listener.onResume(filePath);
+    //     }
+    //     if(chunkSize > dataBuffer.size() - i)
+    //         chunkSize = dataBuffer.size() - i;
+            
+    //     file.write(dataBuffer.data() + i, chunkSize);
+
+    //     if (file.fail())
+    //     {
+    //         m_isWorkingAtomic = false;
+    //         file.close();
+    //         listener.onIOError(filePath, FileIOListener::FileWriteError);
+    //         return;
+    //     }
+        
+    //     listener.onProgress(static_cast<float>(file.tellp()) / dataBuffer.size());
+    // }
