@@ -21,18 +21,18 @@ public:
     std::function<void (const std::string& )> onIOStartCallback = [](const std::string& ){printf("onIOStartCallback\n");};
     std::function<void (const std::string& , FileIOListener::FileIOErrorsEnum)> onIOErrorCallback = [](const std::string& , FileIOListener::FileIOErrorsEnum){printf("onIOErrorCallback\n");};
     std::function<void (const float)> onProgressCallback = [](const float ){printf("onProgressCallback\n");};
-    std::function<void (void)> onPauseCallback = [](){printf("onPauseCallback\n");};
-    std::function<void (void)> onResumeCallback = [](){printf("onResumeCallback\n");};
-    std::function<void (void)> onStopCallback = [](){printf("onStopCallback\n");};
+    std::function<void (const std::string&)> onPauseCallback = [](const std::string&){printf("onPauseCallback\n");};
+    std::function<void (const std::string& fileName)> onResumeCallback = [](const std::string& fileName){printf("onResumeCallback\n");};
+    std::function<void (const std::string& fileName)> onStopCallback = [](const std::string& fileName){printf("onStopCallback\n");};
     std::function<void (const std::string&, std::string&)> onLoadCompleteCallback = [](const std::string&, std::string&){printf("onLoadCompleteCallback\n");};
     std::function<void (const std::string&)> onSaveCompleteCallback = [](const std::string&){printf("onSaveCompleteCallback\n");};
 
     void onIOStart(const std::string& filename) override { onIOStartCallback(filename);};
     void onIOError(const std::string& failedArguments, FileIOErrorsEnum error) override { onIOErrorCallback(failedArguments, error);};
     void onProgress(const float percent) override { onProgressCallback(percent);};
-    void onPause() override { onPauseCallback();};
-    void onResume() override { onResumeCallback();};
-    void onStop() override { onStopCallback();};
+    void onPause(const std::string& fileName) override { onPauseCallback(fileName);};
+    void onResume(const std::string& fileName) override { onResumeCallback(fileName);};
+    void onStop(const std::string& fileName) override { onStopCallback(fileName);};
     void onLoadComplete(const std::string& fileName, std::string& dataBuffer) override { onLoadCompleteCallback(fileName, dataBuffer);};
     void onSaveComplete(const std::string& fileName) override { onSaveCompleteCallback(fileName);};
 
@@ -159,11 +159,7 @@ TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--sav
     
     
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [](const float progress)
-    {
-        REQUIRE(static_cast<int>(progress) == 100);
 
-    };
     testListener.onIOStartCallback = [&](const std::string& fileName)
         {
             isSaveStarted = true;
@@ -282,10 +278,10 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
             condition.notify_one();
             std::unique_lock lock(mtx);
             condition.wait(lock, [&](){return isContinueThread.load() == true;});
-            isContinueThread = false;
+            isContinueThread.store(false);
         };
     testListener.onPauseCallback = 
-        [&]()
+        [&](const std::string& fileName)
         {
             REQUIRE(testValue == 0);
             testValue = 1;
@@ -293,7 +289,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
             condition.notify_one();
         };
     testListener.onResumeCallback = 
-        [&]()
+        [&](const std::string& fileName)
         {
             REQUIRE(testValue == 1);
             testValue = 2;
@@ -309,11 +305,12 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
     testListener.onIOErrorCallback = 
         [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
         {
+
             REQUIRE(false);
             condition.notify_one();
-            exit(0);
+            return;
         };
-    testListener.onProgressCallback = [](const size_t){};
+
 
     TextEditorCore::FileManager fileManager;
 
@@ -331,7 +328,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
             isContinueTest.store(false);
         }
 
-        fileManager.pause(testListener);
+        fileManager.pause(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
@@ -343,7 +340,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        fileManager.resume(testListener);
+        fileManager.resume(initFileName , testListener);
 
         {
             //whait until onIOLoadCompliteCallback 
@@ -382,7 +379,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
             isContinueThread = false;
         };
     testListener.onPauseCallback = 
-        [&]()
+        [&](const std::string& fileName)
         {
             REQUIRE(testValue == 0);
             testValue = 1;
@@ -390,7 +387,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
             condition.notify_one();
         };
     testListener.onResumeCallback = 
-        [&]()
+        [&](const std::string& fileName)
         {
             REQUIRE(testValue == 1);
             testValue = 2;
@@ -412,7 +409,6 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
             exit(1);
         };
 
-
     TextEditorCore::FileManager fileManager;
 
     for(size_t i = 0; i < 10; i++)
@@ -425,7 +421,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
             isContinueTest = false;
         }
 
-        fileManager.pause(testListener);
+        fileManager.pause(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
@@ -437,7 +433,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        fileManager.resume(testListener);
+        fileManager.resume(initFileName, testListener);
 
         {
             //whait until onIOLoadCompliteCallback 
@@ -459,14 +455,11 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
     std::string dataBuffer;
     dataBuffer.resize(textSize, 'a');
 
-
-    std::vector<size_t> progressCheckValues;
+    std::vector<float> progressCheckValues;
     progressCheckValues.resize(5, 0);
-    const float percentage = static_cast<float>(chunkSize)  / (static_cast<float>(textSize) / 100.0);
-    
-    for(size_t i = 0, value = percentage; i < progressCheckValues.size(); i++ , value += percentage)
+    for(size_t i = 0; i < progressCheckValues.size(); i++ )
     {
-        progressCheckValues[i] = value;
+        progressCheckValues[i] = static_cast<float>(chunkSize + (chunkSize * i)) / static_cast<float>(textSize);
     }
     auto itr = progressCheckValues.begin();
 
@@ -475,7 +468,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
     std::mutex mtx;
     
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [&](const size_t progres)
+    testListener.onProgressCallback = [&](const float progres)
 {
         if(itr == progressCheckValues.end())
         {
@@ -483,7 +476,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
             REQUIRE(false);
             return;
         }
-        REQUIRE(static_cast<size_t>(*itr) == static_cast<size_t>(progres));
+        REQUIRE(static_cast<size_t>(*itr * 100) == static_cast<size_t>(progres * 100));
         itr += 1;
     };
     testListener.onSaveCompleteCallback = 
@@ -493,7 +486,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
             REQUIRE(itr == progressCheckValues.end());
             isContinueTest.store(true);
             condition.notify_one();
-        };
+        }; 
     testListener.onIOErrorCallback = 
         [&](const std::string& failedArguments, FileIOListener::FileIOErrorsEnum error)
         {
@@ -510,7 +503,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
     
 }
 
-// load progress check
+// // load progress check
 TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--ProgressValue]")
 {
 
@@ -520,17 +513,15 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
 
     const std::string initFileName = "loadFileTestProgress.txt";
     const size_t chunkSize = 4096;
-    const size_t textSize = chunkSize * 2;
+    const size_t textSize = chunkSize * 5;
     std::string initDataBuffer;
     initDataBuffer.resize(textSize, 'a');
 
     std::vector<float> progressCheckValues;
-    progressCheckValues.resize(2, 0);
-    const float percentage = static_cast<float>(chunkSize)  / (static_cast<float>(textSize) / 100.0);
-    
-    for(size_t i = 0, value = percentage; i < progressCheckValues.size(); i++ , value += percentage)
+    progressCheckValues.resize(5, 0);
+    for(size_t i = 0; i < progressCheckValues.size(); i++ )
     {
-        progressCheckValues[i] = value;
+        progressCheckValues[i] = static_cast<float>(chunkSize + (chunkSize * i)) / static_cast<float>(textSize);
     }
     auto itr = progressCheckValues.begin();
     
@@ -557,8 +548,11 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
             condition.notify_one();
             return;
         };
-    testListener.onStopCallback =
-        [&](){ REQUIRE(false);};
+    testListener.onStopCallback =[&](const std::string& fileName)
+        { 
+            REQUIRE(false);
+        };
+
     TextEditorCore::FileManager fileManager;
     fileManager.saveFile(initFileName, initDataBuffer, false, testListener);
     {
@@ -567,7 +561,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
         isContinueTest.store(false);
     }
 
-    testListener.onProgressCallback = [&](const size_t progres)
+    testListener.onProgressCallback = [&](const float progres)
         {
             if(itr == progressCheckValues.end())
             {
@@ -575,7 +569,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
                 REQUIRE(false);
                 return;
             }
-            REQUIRE(static_cast<size_t>(*itr) == static_cast<size_t>(progres));
+            REQUIRE(static_cast<size_t>(*itr * 100) == static_cast<size_t>(progres *100));
             itr += 1;
         };
     initDataBuffer.resize(0);
@@ -587,11 +581,12 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
     }
 }
 
-//unsuccessful stop (nothing to stop)
+
+// //unsuccessful pause (nothing to stop)
 TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError]")
 {
     TestFileManagerListener testListener;
-        testListener.onProgressCallback = [&](const size_t progres)
+    testListener.onProgressCallback = [&](const size_t progres)
         {
             REQUIRE(false);
         };
@@ -612,10 +607,10 @@ TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError
         };
     
     TextEditorCore::FileManager fileManager;
-    fileManager.pause(testListener);
+    fileManager.pause("fileName", testListener);
 }
 
-//resume when there is nothing to wake up
+// //resume when there is nothing to wake up
 TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeError]")
 {
     TestFileManagerListener testListener;
@@ -640,10 +635,10 @@ TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeE
         };
     
     TextEditorCore::FileManager fileManager;
-    fileManager.resume(testListener);
+    fileManager.resume("", testListener);
 }
 
-//unsuccessful stop (nothing to stop)
+// //unsuccessful stop (nothing to stop)
 TEST_CASE("FileManager::stopWork()--stopWorkError", "[FileManager::stopWork()--stopWorkError]")
 {
     TestFileManagerListener testListener;
@@ -668,10 +663,10 @@ TEST_CASE("FileManager::stopWork()--stopWorkError", "[FileManager::stopWork()--s
         };
     
     TextEditorCore::FileManager fileManager;
-    fileManager.stopWork(testListener);
+    fileManager.stopWork("", testListener);
 }
 
-//successful loadFile stop
+// //successful loadFile stop
 TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::stopWork()--stopWorkSuccess--loadFile]")
 {
     std::atomic<int> testValue(0);
@@ -684,8 +679,12 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::s
     std::string initDataBuffer = "1234567";
     
     TestFileManagerListener testListener;
-    testListener.onPauseCallback = [&](){REQUIRE(false);};
-    testListener.onResumeCallback = [&](){REQUIRE(false);};
+    testListener.onPauseCallback = [&](const std::string&)
+    {
+        REQUIRE(false);
+    };
+    testListener.onResumeCallback = [&](const std::string& fileName)
+    {REQUIRE(false);};
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
         [&](const float)
@@ -705,7 +704,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::s
             isContinueTest.store(true);
         };
     testListener.onStopCallback =
-        [&]()
+        [&](const std::string& fileName)
         {
             remove(initFileName.c_str());
             REQUIRE(testValue == 2);
@@ -736,7 +735,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::s
             isContinueTest.store(false);
         }
 
-        fileManager.stopWork(testListener);
+        fileManager.stopWork(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
@@ -763,11 +762,15 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
     std::condition_variable condition;
     std::mutex mtx;
 
-
-    
     TestFileManagerListener testListener;
-    testListener.onPauseCallback = [&](){REQUIRE(false);};
-    testListener.onResumeCallback = [&](){REQUIRE(false);};
+    testListener.onPauseCallback = [&](const std::string&)
+    {
+        REQUIRE(false);
+    };
+    testListener.onResumeCallback = [&](const std::string& fileName)
+        {
+            REQUIRE(false);
+        };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
         [&](const float)
@@ -787,7 +790,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
             isContinueTest.store(true);
         };
     testListener.onStopCallback =
-        [&]()
+        [&](const std::string& fileName)
         {
             remove(initFileName.c_str());
             REQUIRE(testValue == 2);
@@ -813,7 +816,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
             isContinueTest.store(false);
         }
 
-        fileManager.stopWork(testListener);
+        fileManager.stopWork(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
@@ -827,7 +830,8 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
     }
 }
 
-//pause when load is complete
+
+// //pause when load is complete
 TEST_CASE("FileManager::pause()--pauseError--loadFile", "[FileManager::pause()--pauseError--loadFile]")
 {
 std::atomic<int> testValue(0);
@@ -840,8 +844,14 @@ std::atomic<int> testValue(0);
     std::string initDataBuffer = "1234567";
     
     TestFileManagerListener testListener;
-    testListener.onPauseCallback = [&](){REQUIRE(false);};
-    testListener.onResumeCallback = [&](){REQUIRE(false);};
+    testListener.onPauseCallback = [&](const std::string&)
+        {
+            REQUIRE(false);
+        };
+    testListener.onResumeCallback = [&](const std::string& fileName)
+        {
+            REQUIRE(false);
+        };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
         [&](const float)
@@ -885,7 +895,7 @@ std::atomic<int> testValue(0);
             isContinueTest.store(false);
         }
 
-        fileManager.pause(testListener);
+        fileManager.pause(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
@@ -898,6 +908,8 @@ std::atomic<int> testValue(0);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
+
+
 //pause when save is complete
 TEST_CASE("FileManager::pause()--pauseError--saveFile", "[FileManager::pause()--pauseError--saveFile]")
 {
@@ -911,11 +923,15 @@ std::atomic<int> testValue(0);
     std::condition_variable condition;
     std::mutex mtx;
     
-
-    
     TestFileManagerListener testListener;
-    testListener.onPauseCallback = [&](){REQUIRE(false);};
-    testListener.onResumeCallback = [&](){REQUIRE(false);};
+    testListener.onPauseCallback = [](const std::string&)
+        {
+            REQUIRE(false);
+        };
+    testListener.onResumeCallback = [](const std::string& fileName)
+        {
+            REQUIRE(false);
+        };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
         [&](const float)
@@ -956,7 +972,7 @@ std::atomic<int> testValue(0);
             isContinueTest.store(false);
         }
 
-        fileManager.pause(testListener);
+        fileManager.pause(initFileName, testListener);
         isContinueThread.store(true);
         condition.notify_one();
 
