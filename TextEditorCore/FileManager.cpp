@@ -36,12 +36,12 @@ public:
 
 private:
     
-    void loadFileFunction(const std::string& filePath,
+    void loadFileThreadFunction(const std::string& filePath,
                         std::string& dataBuffer,
                         IFileIOListener& listener
                         );
 
-    void saveFileFunction(const std::string& filePath,
+    void saveFileThreadFunction(const std::string& filePath,
                         const std::string& dataBuffer,
                         IFileIOListener& listener
                         );
@@ -79,7 +79,7 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
         listner.onIOError(filePath, IFileIOListener::FileDNExist);
         return;
     }
-    std::thread loadThread(&FileManager::PImpl::loadFileFunction,
+    std::thread loadThread(&FileManager::PImpl::loadFileThreadFunction,
                             this,
                             std::ref(filePath),
                             std::ref(dataBuffer),
@@ -90,7 +90,7 @@ void FileManager::PImpl::loadFile(const std::string& filePath,
 
 
 
-void FileManager::PImpl::loadFileFunction(const std::string& filePath,
+void FileManager::PImpl::loadFileThreadFunction(const std::string& filePath,
                                         std::string& dataBuffer,
                                         IFileIOListener& listner
                                         )
@@ -210,7 +210,7 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
         return;
     }
 
-    std::thread SaveThread(&FileManager::PImpl::saveFileFunction,
+    std::thread SaveThread(&FileManager::PImpl::saveFileThreadFunction,
                             this,
                             std::ref(filePath),
                             std::ref(dataBuffer),
@@ -219,7 +219,7 @@ void FileManager::PImpl::saveFile(const std::string& filePath,
     SaveThread.detach();
 }
 
-void FileManager::PImpl::saveFileFunction(const std::string& filePath,
+void FileManager::PImpl::saveFileThreadFunction(const std::string& filePath,
                                   const std::string& dataBuffer,
                                   IFileIOListener& listener
                                   )
