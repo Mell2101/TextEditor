@@ -43,6 +43,9 @@ add_library(TextEditorCoreLib STATIC
     
     include/TextEditorCore/TextManager.h
     src/TextManager.cpp
+    
+    include/TextEditorCore/Document.h
+    src/Document.cpp
 )
 
 target_link_libraries(TextEditorCoreLib
