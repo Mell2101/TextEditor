@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
-#include <TextEditorCore/FileIOListener.h>
+#include <TextEditorCore/IFileIOListener.h>
 
 /* -------------------------------------------------------------------------- */
 
@@ -10,8 +10,6 @@ namespace TextEditorCore
 
 class FileManager
 {
-
-
 
 private:
     struct PImpl;
@@ -22,22 +20,16 @@ public:
     FileManager(const size_t chunkSize = 4096);
     ~FileManager();
     
-    void loadFile(
-        const std::string& filePath,
-        std::string& dataBuffer,
-        IFileIOListener& listner 
-    );
+    void setFilePath(const std::string& filePath);
+    void setDataBuffer(std::string& dataBuffer);
+    void setListener(IFileIOListener* listener);
     
-    void saveFile(
-        const std::string& filePath,
-        const std::string& dataBuffer,
-        const bool isRewrite,
-        IFileIOListener& listener
-    );
+    void loadFile();
+    void saveFile(const bool isRewrite);
     
-    void pause(const std::string& fileName, IFileIOListener&);
-    void resume(const std::string& fileName, IFileIOListener&);
-    void stopWork(const std::string& fileName, IFileIOListener&);
+    void pause();
+    void resume();
+    void stopWork();
 };
 
 }// namespace TextEditorCore

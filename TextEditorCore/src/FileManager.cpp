@@ -23,276 +23,489 @@ private:
     std::atomic<bool> m_isPauseAtomic = false;
     std::atomic<bool> m_isStopAtomic = false;
     std::atomic<bool> m_isWorkingAtomic = false;
+    
     std::mutex m_pauseMutex;
     std::condition_variable m_pauseCondition;
+    
     const size_t m_chunkSize;
-
-    // TODO: ADD DEFINES
-    std::chrono::milliseconds m_testDelayTime;
+    
+    std::string m_filePath;
+    std::string* m_dataBuffer;
+    
+    std::mutex m_listenerMutex;
+    IFileIOListener* m_listener;
+    
+    std::thread m_thread;
+    
+#ifdef TESTING
+        // delay for testing
+        std::chrono::milliseconds m_testDelayTime;
+#endif // TESTING
+    
 public:
-    PImpl(const size_t chunkSize): m_chunkSize(chunkSize){}
-
+    PImpl(const size_t chunkSize) : m_chunkSize(chunkSize), m_dataBuffer(nullptr), m_listener(nullptr) {}
+    ~PImpl()
+    {
+        if (m_thread.joinable())
+        {
+            setListener(nullptr);
+            stopWork();
+            m_thread.join();
+        }
+    }
+    
+public:
+    bool setFilePath(const std::string& filePath)
+    {
+        if (m_isWorkingAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, IOInProgress);
+            }
+            return false;
+        }
+        
+        m_filePath = filePath;
+        return true;
+    }
+    
+    bool setDataBuffer(std::string& dataBuffer)
+    {
+        if (m_isWorkingAtomic.load())
+        {
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onIOError(m_filePath, IOInProgress);
+                }
+            }
+            return false;
+        }
+        
+        m_dataBuffer = &dataBuffer;
+        return true;
+    }
+    
+    void setListener(IFileIOListener* listener)
+    {
+        std::scoped_lock sLock(m_listenerMutex);
+        m_listener = listener;
+    }
+    
+    void loadFile()
+    {
+        if (m_filePath.empty())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FilePathIsEmpty);
+            }
+            return;
+        }
+        
+        if (m_dataBuffer == nullptr)
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, DataBufferIsNotSet);
+            }
+            return;
+        }
+        
+        if (!std::filesystem::exists(m_filePath))
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FileDNExist);
+            }
+            return;
+        }
+        
+        if (m_isWorkingAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, IOInProgress);
+            }
+            return;
+        }
+        
+        if (m_thread.joinable())
+        {
+            m_thread.join();
+        }
+        
+        m_thread = std::thread(&FileManager::PImpl::loadFileThreadFunction, this);
+    }
+    
+    void saveFile(const bool isRewrite)
+    {
+        if (m_filePath.empty())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FilePathIsEmpty);
+            }
+            return;
+        }
+        
+        if (m_dataBuffer == nullptr)
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, DataBufferIsNotSet);
+            }
+            return;
+        }
+        
+        if (m_isWorkingAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, IOInProgress);
+            }
+            return;
+        }
+        
+        if (m_thread.joinable())
+        {
+            m_thread.join();
+        }
+        
+        if (isRewrite == false && std::filesystem::exists(m_filePath))
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FileReWriteTaboo);
+            }
+            return;
+        }
+        
+        std::thread SaveThread(&FileManager::PImpl::saveFileThreadFunction, this);
+    }
+    
+    void pause()
+    {
+        if (m_isPauseAtomic.load() || m_isStopAtomic.load() || !m_isWorkingAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, PauseError);
+            }
+            return;
+        }
+        m_isPauseAtomic.store(true);
+    }
+    
+    void resume()
+    {
+        if (!m_isPauseAtomic.load() || m_isStopAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, ResumeError);
+            }
+            return;
+        }
+        m_isPauseAtomic.store(false);
+        m_pauseCondition.notify_one();
+    }
+    
+    void stopWork()
+    {
+        if (m_isStopAtomic.load() || !m_isWorkingAtomic.load())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, StopError);
+            }
+            return;
+        }
+        m_isPauseAtomic.store(false);
+        m_isStopAtomic.store(true);
+        m_pauseCondition.notify_one();
+    }
+    
 private:
-    
-    void loadFileThreadFunction(const std::string& filePath,
-                        std::string& dataBuffer,
-                        IFileIOListener& listener
-                        );
-
-    void saveFileThreadFunction(const std::string& filePath,
-                        const std::string& dataBuffer,
-                        IFileIOListener& listener
-                        );
-
-public:
-    void loadFile(const std::string& filePath,
-                std::string& dataBuffer,
-                IFileIOListener& listner
+    void loadFileThreadFunction()
+    {
+        std::ifstream file(m_filePath);
+        if (!file.is_open())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FileUnavailable);
+            }
+            return;
+        }
+        
+        m_isWorkingAtomic.store(true);
+        
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOStart(m_filePath);
+            }
+        }
+        // get length of file:
+        
+        file.seekg (0, file.end);
+        int64_t fileSize = static_cast<int>(file.tellg());
+        file.seekg (0, file.beg);
+        
+        m_dataBuffer->clear();
+        m_dataBuffer->resize(fileSize);
+        
+        int64_t pos = 0;
+        while (!file.eof() && pos < fileSize)
+        {
+            if (m_isStopAtomic.load())
+            {
+                break;
+            }
+            if (m_isPauseAtomic.load())
+            {
+                if (m_listener)
+                {
+                    m_listener->onPause(m_filePath);
+                }
+                std::unique_lock lock(m_pauseMutex);
+                m_pauseCondition.wait(lock, 
+                    [&]()
+                    {
+                        return (!m_isPauseAtomic.load() || m_isStopAtomic.load());
+                    }
                 );
-
-    void resume(const std::string& fileName, IFileIOListener&);
+                
+                {
+                    std::scoped_lock sLock(m_listenerMutex);
+                    if (m_listener)
+                    {
+                        m_listener->onResume(m_filePath);
+                    }
+                }
+                continue;
+            }
+            file.read(m_dataBuffer->data() + file.tellg(), m_chunkSize);
+            if (file.fail() && !file.eof())
+            {
+                m_isWorkingAtomic.store(false);
+                file.close();
+                
+                {
+                    std::scoped_lock sLock(m_listenerMutex);
+                    if (m_listener)
+                    {
+                        m_listener->onIOError(m_filePath, FileReadError);
+                    }
+                }
+                return;
+            }
+            pos = file.tellg();
+            
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onProgress(static_cast<float>(pos) / fileSize);
+                }
+            }
+    #ifdef TESTING
+            std::this_thread::sleep_for(std::chrono::milliseconds(m_testDelayTime)); 
+    #endif // TESTING
+        }
+        
+        file.close();
+        
+        if (m_isStopAtomic.load())
+        {
+            m_isStopAtomic.store(false);
+            m_isWorkingAtomic.store(false);
+            
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onStop(m_filePath);
+                }
+            }
+            return;
+        }
+        if (m_isPauseAtomic.load())
+        {
+            m_isPauseAtomic.store(false);
+            
+            std::scoped_lock sLock(m_listenerMutex);
+            {
+                if (m_listener)
+                {
+                    m_listener->onIOError(m_filePath, PauseError);
+                }
+            }
+        }
+        
+        std::scoped_lock sLock(m_listenerMutex);
+        {
+            if (m_listener)
+            {
+                m_listener->onLoadComplete(m_filePath, *m_dataBuffer);
+            }
+        }
+        
+        m_isWorkingAtomic.store(false);
+    }
     
-    void pause(const std::string&, IFileIOListener&);
-
-    void stopWork(const std::string& fileName, IFileIOListener&);
-    
-    void saveFile(const std::string& filePath,
-                const std::string& dataBuffer,
-                const bool isRewrite,
-                IFileIOListener& listener
+    void saveFileThreadFunction()
+    {
+        std::ofstream file(m_filePath, std::ios::out | std::ios::trunc);
+        
+        if (!file.is_open())
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOError(m_filePath, FileUnavailable);
+            }
+            return;
+        }
+        
+        m_isWorkingAtomic.store(true);
+        
+        {
+            std::scoped_lock sLock(m_listenerMutex);
+            if (m_listener)
+            {
+                m_listener->onIOStart(m_filePath);
+            }
+        }
+        
+        size_t chunkSize = m_chunkSize;
+        size_t pos = 0;
+        while (pos < m_dataBuffer->size())
+        {
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_isStopAtomic.load())
+                {
+                    break;
+                }
+            }
+            
+            if (m_isPauseAtomic.load())
+            {
+                {
+                    std::scoped_lock sLock(m_listenerMutex);
+                    if (m_listener)
+                    {
+                        m_listener->onPause(m_filePath);
+                    }
+                }
+                
+                std::unique_lock lock(m_pauseMutex);
+                m_pauseCondition.wait(lock,
+                    [&]()
+                    {
+                        return (m_isStopAtomic.load() || !m_isPauseAtomic.load());
+                    }
                 );
-                  
-    IFileIOListener::FileIOErrorsEnum checkPath(const std::string& filePath, bool isLoad, bool isExist);
-    
+                
+                {
+                    std::scoped_lock sLock(m_listenerMutex);
+                    if (m_listener)
+                    {
+                        m_listener->onResume(m_filePath);
+                    }
+                }
+                continue;
+            }
+            
+            if (chunkSize > m_dataBuffer->size() - pos)
+            {
+                chunkSize = m_dataBuffer->size() - pos;
+            }
+            
+            file.write(m_dataBuffer->data() + pos, chunkSize);
+            
+            if (file.fail())
+            {
+                m_isWorkingAtomic = false;
+                file.close();
+                
+                {
+                    std::scoped_lock sLock(m_listenerMutex);
+                    if (m_listener)
+                    {
+                        m_listener->onIOError(m_filePath, FileWriteError);
+                    }
+                }
+                
+                return;
+            }
+            
+            pos += chunkSize;
+            
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onProgress(static_cast<float>(pos) / m_dataBuffer->size());
+                }
+            }
+        }
+        
+        file.close();
+        m_isWorkingAtomic.store(false);
+        
+        if (m_isStopAtomic.load())
+        {
+            m_isStopAtomic.store(false);
+            
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onStop(m_filePath);
+                }
+            }
+            return;
+        }
+        if (m_isPauseAtomic.load())
+        {
+            m_isPauseAtomic.store(false);
+            
+            {
+                std::scoped_lock sLock(m_listenerMutex);
+                if (m_listener)
+                {
+                    m_listener->onIOError(m_filePath, PauseError);
+                }
+            }
+        }
+        
+        if (m_listener)
+        {
+            m_listener->onSaveComplete(m_filePath);
+        }
+    }
 };
 
-
-void FileManager::PImpl::loadFile(const std::string& filePath,
-                                std::string& dataBuffer,
-                                IFileIOListener& listner
-                                )
-{
-    if(!std::filesystem::exists(filePath))
-    {
-        listner.onIOError(filePath, IFileIOListener::FileDNExist);
-        return;
-    }
-    std::thread loadThread(&FileManager::PImpl::loadFileThreadFunction,
-                            this,
-                            std::ref(filePath),
-                            std::ref(dataBuffer),
-                            std::ref(listner)
-                        );
-    loadThread.detach();
-}
-
-
-
-void FileManager::PImpl::loadFileThreadFunction(const std::string& filePath,
-                                        std::string& dataBuffer,
-                                        IFileIOListener& listner
-                                        )
-{
-    std::ifstream file(filePath);
-    if (!file.is_open())
-    {
-        listner.onIOError(filePath, IFileIOListener::FileUnavailable);
-        return;
-    }
-
-    m_isWorkingAtomic.store(true);
-    listner.onIOStart(filePath);
-    // get length of file:
-
-    file.seekg (0, file.end);
-    int64_t fileSize = static_cast<int>(file.tellg());
-    file.seekg (0, file.beg);
-
-    dataBuffer.clear();
-    dataBuffer.resize(fileSize);
-
-    int64_t pos = 0;
-    while(!file.eof() && pos < fileSize)
-    {
-        if(m_isStopAtomic.load())
-        {
-            break;
-        }
-        if(m_isPauseAtomic.load())
-        {
-            listner.onPause(filePath);
-            std::unique_lock lock(m_pauseMutex);
-            m_pauseCondition.wait(lock, 
-                [&]()
-                {
-                    return (!m_isPauseAtomic.load()|| m_isStopAtomic.load());
-                }
-            );
-            listner.onResume(filePath);
-            continue;     
-        }
-        file.read(dataBuffer.data() + file.tellg(), m_chunkSize);
-        if(file.fail() && !file.eof())
-        {
-            m_isWorkingAtomic.store(false);
-            file.close();
-            listner.onIOError(filePath, IFileIOListener::FileReadError);
-            return;
-        }
-        pos = file.tellg();
-        listner.onProgress(static_cast<float>(pos) / fileSize);
-#ifdef  TESTING
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_testDelayTime)); 
-#endif //  TESTING
-    }
-
-
-    file.close();
-    m_isWorkingAtomic.store(false);
-
-    if(m_isStopAtomic){
-        m_isStopAtomic.store(false);
-        listner.onStop(filePath);
-        return;
-    }
-    if(m_isPauseAtomic)
-    {
-        m_isPauseAtomic.store(false);
-        listner.onIOError(filePath, IFileIOListener::PauseError);
-    }
-    listner.onLoadComplete(filePath, dataBuffer);
-}
-
-void FileManager::PImpl::pause(const std::string& fileName, IFileIOListener& listener)
-{
-    if(m_isPauseAtomic.load() || m_isStopAtomic.load() || !m_isWorkingAtomic.load())
-    {
-        listener.onIOError(fileName, IFileIOListener::PauseError);
-        return;
-    }
-    m_isPauseAtomic.store(true);
-}
-
-void FileManager::PImpl::resume(const std::string& fileName, IFileIOListener& listener)
-{
-    if(!m_isPauseAtomic.load() || m_isStopAtomic.load())
-    {
-        listener.onIOError(fileName, IFileIOListener::ResumeError);
-        return;
-    }
-    m_isPauseAtomic.store(false);
-    m_pauseCondition.notify_one();
-}
-
-void FileManager::PImpl::stopWork(const std::string& fileName,IFileIOListener&listener)
-{
-    if(m_isStopAtomic.load() || !m_isWorkingAtomic.load())
-    {
-        listener.onIOError(fileName, IFileIOListener::StopError);
-        return;
-    }
-    m_isPauseAtomic.store(false);
-    m_isStopAtomic.store(true);
-    m_pauseCondition.notify_one();
-}
-
-void FileManager::PImpl::saveFile(const std::string& filePath,
-                                const std::string& dataBuffer,
-                                const bool isOverWriteAllowed,
-                                IFileIOListener& listener
-                                )
-{    
-    if(isOverWriteAllowed == false && std::filesystem::exists(filePath))
-    {
-        listener.onIOError(filePath, IFileIOListener::FileReWriteTaboo);
-        return;
-    }
-
-    std::thread SaveThread(&FileManager::PImpl::saveFileThreadFunction,
-                            this,
-                            std::ref(filePath),
-                            std::ref(dataBuffer),
-                            std::ref(listener)
-                        );
-    SaveThread.detach();
-}
-
-void FileManager::PImpl::saveFileThreadFunction(const std::string& filePath,
-                                  const std::string& dataBuffer,
-                                  IFileIOListener& listener
-                                  )
-{
-    std::ofstream file(filePath, std::ios::out | std::ios::trunc);
-
-    if (!file.is_open())
-    {
-        listener.onIOError(filePath, IFileIOListener::FileUnavailable);
-        return;
-    }
-    m_isWorkingAtomic.store(true);
-    listener.onIOStart(filePath);
-
-    size_t chunkSize = m_chunkSize;
-    size_t pos = 0;
-    while(pos < dataBuffer.size())
-    {
-        if(m_isStopAtomic.load())
-        {
-            break;
-        }
-        if(m_isPauseAtomic.load())
-        {
-            listener.onPause(filePath);
-            std::unique_lock lock(m_pauseMutex);
-            m_pauseCondition.wait(lock,
-                [&]()
-                {
-                    return (m_isStopAtomic.load() || !m_isPauseAtomic.load());
-                }
-            );
-            listener.onResume(filePath);
-            continue;
-        }
-        if(chunkSize > dataBuffer.size() - pos)
-            chunkSize = dataBuffer.size() - pos;
-        file.write(dataBuffer.data() + pos, chunkSize);
-
-        if (file.fail())
-        {
-            m_isWorkingAtomic = false;
-            file.close();
-            listener.onIOError(filePath, IFileIOListener::FileWriteError);
-            return;
-        }
-
-        pos += chunkSize;
-        listener.onProgress(static_cast<float>(pos) / dataBuffer.size());
-    }
-
-    file.close();
-    m_isWorkingAtomic.store(false);
-    
-    if(m_isStopAtomic.load())
-    {
-        m_isStopAtomic.store(false);
-        listener.onStop(filePath);
-        return;
-    }
-    if(m_isPauseAtomic.load())
-    {
-        m_isPauseAtomic.store(false);
-        listener.onIOError(filePath, IFileIOListener::PauseError);
-    }
-    
-    listener.onSaveComplete(filePath);
-}
-
-
-
-
 // --------------------------------------------------------------------------
-
-
 
 FileManager::FileManager(const size_t chunkSize)
 {
@@ -301,78 +514,49 @@ FileManager::FileManager(const size_t chunkSize)
 
 FileManager::~FileManager()
 {
-
+    pimpl->setListener(nullptr);
+    pimpl->stopWork();
 }
 
-void FileManager::loadFile(
-    const std::string& filePath,
-    std::string& dataBuffer,
-    IFileIOListener& listner
-)
+void FileManager::setFilePath(const std::string& filePath)
 {
-    pimpl->loadFile(filePath, dataBuffer, listner);
+    pimpl->setFilePath(filePath);
 }
 
-void FileManager::pause(const std::string& fileName,IFileIOListener& listener)
+void FileManager::setDataBuffer(std::string& dataBuffer)
 {
-    pimpl->pause(fileName, listener);
+    pimpl->setDataBuffer(dataBuffer);
 }
 
-void FileManager::resume(const std::string& fileName, IFileIOListener& listener)
+void FileManager::setListener(IFileIOListener* listener)
 {
-    pimpl->resume(fileName, listener);
+    pimpl->setListener(listener);
 }
 
-void FileManager::stopWork(const std::string& fileName, IFileIOListener& listener)
+void FileManager::loadFile()
 {
-    pimpl->stopWork(fileName, listener);
+    pimpl->loadFile();
 }
 
-void FileManager::saveFile( const std::string& filePath,
-                            const std::string& dataBuffer,
-                            const bool isRewrite,
-                            IFileIOListener& listener
-                        )
+void FileManager::saveFile(const bool isRewrite)
 {
-    pimpl->saveFile(filePath, dataBuffer, isRewrite, listener);
+    pimpl->saveFile(isRewrite);
+}
+
+void FileManager::pause()
+{
+    pimpl->pause();
+}
+
+void FileManager::resume()
+{
+    pimpl->resume();
+}
+
+void FileManager::stopWork()
+{
+    pimpl->stopWork();
 }
 
 
 }// namespace TextEditorCore
-
-
-    // for(size_t i = 0; i < dataBuffer.size(); i += chunkSize)
-    // {
-    //     if(m_isStopAtomic.load())
-    //     {
-    //         break;
-    //     }
-    //     if(m_isPauseAtomic.load())
-    //     {
-    //         listener.onPause(filePath);
-    //         std::unique_lock lock(m_pauseMutex);
-    //         m_pauseCondition.wait(lock,
-    //             [&]()
-    //             {
-    //                 return (m_isStopAtomic.load() || !m_isPauseAtomic.load());
-    //             }
-    //         );
-    //         if(m_isStopAtomic.load())
-    //             break;
-    //         listener.onResume(filePath);
-    //     }
-    //     if(chunkSize > dataBuffer.size() - i)
-    //         chunkSize = dataBuffer.size() - i;
-            
-    //     file.write(dataBuffer.data() + i, chunkSize);
-
-    //     if (file.fail())
-    //     {
-    //         m_isWorkingAtomic = false;
-    //         file.close();
-    //         listener.onIOError(filePath, FileIOListener::FileWriteError);
-    //         return;
-    //     }
-        
-    //     listener.onProgress(static_cast<float>(file.tellp()) / dataBuffer.size());
-    // }
