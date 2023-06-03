@@ -37,14 +37,14 @@ struct Document::PImpl : public IFileIOListener
             m_listener->onStartLoading(m_index);
         }
     }
-    void onIOError(const std::string& failedArguments, FileIOErrorsEnum error) override
+    void onIOError(const std::string& filename, FileIOErrorsEnum error) override
     {
         if (m_listener)
         {
             m_listener->onIOError(m_index, error);
         }
     }
-    void onProgress(const float percent) override
+    void onProgress(const std::string& filename, const float percent) override
     {
         if (m_listener)
         {
@@ -126,17 +126,26 @@ void Document::modifyText(size_t pos, size_t length, const std::string& data)
 {
     if (!m_pImpl->m_textManager.eraseSegment({pos, length}))
     {
-        m_pImpl->m_listener->onModifyError();
+        if (m_pImpl->m_listener)
+        {
+            m_pImpl->m_listener->onModifyError();
+        }
         return;
     }
     
     if (!m_pImpl->m_textManager.insertSegment(data, pos))
     {
-        m_pImpl->m_listener->onModifyError();
+        if (m_pImpl->m_listener)
+        {
+            m_pImpl->m_listener->onModifyError();
+        }
         return;
     }
     
-    m_pImpl->m_listener->onChanged(m_pImpl->m_textManager.getTextData());
+    if (m_pImpl->m_listener)
+    {
+        m_pImpl->m_listener->onChanged(m_pImpl->m_textManager.getTextData());
+    }
 }
 
 void Document::load()

@@ -21,7 +21,7 @@ class TestFileManagerListener: public TextEditorCore::IFileIOListener
 public:
     std::function<void (const std::string& )> onIOStartCallback = [](const std::string& ){printf("onIOStartCallback\n");};
     std::function<void (const std::string& , TextEditorCore::FileIOErrorsEnum)> onIOErrorCallback = [](const std::string& , TextEditorCore::FileIOErrorsEnum){printf("onIOErrorCallback\n");};
-    std::function<void (const float)> onProgressCallback = [](const float ){printf("onProgressCallback\n");};
+    std::function<void (const std::string&, const float)> onProgressCallback = [](const std::string&, const float) {printf("onProgressCallback\n");};
     std::function<void (const std::string&)> onPauseCallback = [](const std::string&){printf("onPauseCallback\n");};
     std::function<void (const std::string& fileName)> onResumeCallback = [](const std::string& fileName){printf("onResumeCallback\n");};
     std::function<void (const std::string& fileName)> onStopCallback = [](const std::string& fileName){printf("onStopCallback\n");};
@@ -29,8 +29,8 @@ public:
     std::function<void (const std::string&)> onSaveCompleteCallback = [](const std::string&){printf("onSaveCompleteCallback\n");};
     
     void onIOStart(const std::string& filename) override { onIOStartCallback(filename);};
-    void onIOError(const std::string& failedArguments, TextEditorCore::FileIOErrorsEnum error) override { onIOErrorCallback(failedArguments, error);};
-    void onProgress(const float percent) override { onProgressCallback(percent);};
+    void onIOError(const std::string& filename, TextEditorCore::FileIOErrorsEnum error) override { onIOErrorCallback(filename, error);};
+    void onProgress(const std::string& filename, const float percent) override { onProgressCallback(filename, percent); };
     void onPause(const std::string& fileName) override { onPauseCallback(fileName);};
     void onResume(const std::string& fileName) override { onResumeCallback(fileName);};
     void onStop(const std::string& fileName) override { onStopCallback(fileName);};
@@ -226,7 +226,7 @@ TEST_CASE("FileManager::loadFile()--loadSuccess", "[FileManager::loadFile()--loa
     
     bool isCanStop = false;
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [](const size_t){};
+    testListener.onProgressCallback = [](const std::string&, const size_t){};
     
     testListener.onIOStartCallback = [&](const std::string& fileName)
     {
@@ -383,7 +383,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--saveFile", "[FileManager::pause()
     std::mutex mtx;
     
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [](const size_t){};
+    testListener.onProgressCallback = [](const std::string&, const size_t){};
     testListener.onIOStartCallback =
         [&](const std::string& filename)
         {
@@ -488,7 +488,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
     std::mutex mtx;
     
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [&](const float progres)
+    testListener.onProgressCallback = [&](const std::string&, const float progres)
     {
         if (itr == progressCheckValues.end())
         {
@@ -586,7 +586,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
         isContinueTest.store(false);
     }
     
-    testListener.onProgressCallback = [&](const float progres)
+    testListener.onProgressCallback = [&](const std::string&, const float progres)
         {
             if (itr == progressCheckValues.end())
             {
@@ -615,7 +615,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
 TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError]")
 {
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [&](const size_t progres)
+    testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
         };
@@ -643,7 +643,7 @@ TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError
 TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeError]")
 {
     TestFileManagerListener testListener;
-        testListener.onProgressCallback = [&](const size_t progres)
+        testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
         };
@@ -671,7 +671,7 @@ TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeE
 TEST_CASE("FileManager::stopWork()--stopWorkError", "[FileManager::stopWork()--stopWorkError]")
 {
     TestFileManagerListener testListener;
-        testListener.onProgressCallback = [&](const size_t progres)
+        testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
         };
@@ -716,7 +716,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--loadFile", "[FileManager::s
     {REQUIRE(false);};
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
-        [&](const float)
+        [&](const std::string&, const float)
         {
             testValue.store(2);
             isContinueTest.store(true);
@@ -805,7 +805,7 @@ TEST_CASE("FileManager::stopWork()--stopWorkSuccess--saveFile", "[FileManager::s
         };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
-        [&](const float)
+        [&](const std::string&, const float)
         {
             testValue.store(2);
             isContinueTest.store(true);
@@ -890,7 +890,7 @@ std::atomic<int> testValue(0);
         };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
-        [&](const float)
+        [&](const std::string&, const float)
         {
             testValue.store(2);
             isContinueTest.store(true);
@@ -974,7 +974,7 @@ std::atomic<int> testValue(0);
         };
     testListener.onIOStartCallback =[](const std::string&){return;};
     testListener.onProgressCallback =
-        [&](const float)
+        [&](const std::string&, const float)
         {
             testValue.store(2);
             isContinueTest.store(true);

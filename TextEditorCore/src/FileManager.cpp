@@ -192,7 +192,7 @@ public:
             return;
         }
         
-        std::thread SaveThread(&FileManager::PImpl::saveFileThreadFunction, this);
+        m_thread = std::thread(&FileManager::PImpl::saveFileThreadFunction, this);
     }
     
     void pause()
@@ -323,7 +323,7 @@ private:
                 std::scoped_lock sLock(m_listenerMutex);
                 if (m_listener)
                 {
-                    m_listener->onProgress(static_cast<float>(pos) / fileSize);
+                    m_listener->onProgress(m_filePath, static_cast<float>(pos) / fileSize);
                 }
             }
     #ifdef TESTING
@@ -464,7 +464,7 @@ private:
                 std::scoped_lock sLock(m_listenerMutex);
                 if (m_listener)
                 {
-                    m_listener->onProgress(static_cast<float>(pos) / m_dataBuffer->size());
+                    m_listener->onProgress(m_filePath, static_cast<float>(pos) / m_dataBuffer->size());
                 }
             }
         }

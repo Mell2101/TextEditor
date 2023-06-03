@@ -27,8 +27,8 @@ public:
     virtual ~IFileIOListener() = default;
     
     virtual void onIOStart(const std::string& filename) = 0;
-    virtual void onIOError(const std::string& failedArguments, FileIOErrorsEnum) = 0;
-    virtual void onProgress(const float percent) = 0;
+    virtual void onIOError(const std::string& filename, FileIOErrorsEnum) = 0;
+    virtual void onProgress(const std::string& filename, const float percent) = 0;
     virtual void onPause(const std::string& fileName) = 0;
     virtual void onResume(const std::string& fileName) = 0;
     virtual void onStop(const std::string& fileName) = 0;
