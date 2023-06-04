@@ -38,15 +38,18 @@ add_compile_options(
 find_package(Threads REQUIRED)
 
 add_library(TextEditorCoreLib STATIC
-    FileManager.h
-    FileManager.cpp
+    include/TextEditorCore/FileManager.h
+    src/FileManager.cpp
     
-    TextManager.h
-    TextManager.cpp
+    include/TextEditorCore/TextManager.h
+    src/TextManager.cpp
+    
+    include/TextEditorCore/Document.h
+    src/Document.cpp
 )
 
 target_link_libraries(TextEditorCoreLib
     PRIVATE Threads::Threads
 )
 
-target_include_directories(TextEditorCoreLib PUBLIC .)
+target_include_directories(TextEditorCoreLib PUBLIC include)

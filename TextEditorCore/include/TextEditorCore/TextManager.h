@@ -16,14 +16,12 @@ private:
 public:
     TextManager();
     TextManager(const std::string& data);
-    // ~TextManager();
     
     void setTextData(const std::string& content);
-    const std::string& getTextData() const  { return data; };
+    std::string& getTextData() { return data; };
     
     void clean();
     
-    // //returns pairs, containing pos and size
     std::vector<std::pair<size_t, size_t>> find(const std::string& token);
     
     std::string getSegment(const std::pair<size_t, size_t>& segment) const;

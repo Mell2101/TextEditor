@@ -1,4 +1,4 @@
-#include "TextManager.h"
+#include <TextEditorCore/TextManager.h>
 
 namespace TextEditorCore
 {
@@ -71,19 +71,14 @@ bool TextManager::insertSegment(const std::string &segmentData, const size_t pos
         {
             return false;
         }
-        else if(data.length() - 1 == pos)
-        {
-            data.append(segmentData);
-            return true;
-        }
-        else if(0 == pos)
+        else if (pos == data.length())
         {
             data.append(segmentData);
             return true;
         }
         else
         {
-            data.insert(pos,segmentData);
+            data.insert(pos, segmentData);
             return true;
         }
     }
