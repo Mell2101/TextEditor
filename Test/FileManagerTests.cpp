@@ -68,6 +68,7 @@ TEST_CASE("FileManager::loadFile()--FileDNExist", "[FileManager::loadFile()--Fil
     std::condition_variable condition;
     
     TestFileManagerListener testListener;
+    testListener.onProgressCallback = [](const std::string&, const float){};
     testListener.onIOStartCallback = 
         [&](const std::string& fileName)
         { 
@@ -121,7 +122,7 @@ TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()-
     bool canStop = false;
     TextEditorCore::FileManager fileManager;
     TestFileManagerListener testListener;
-    
+    testListener.onProgressCallback = [](const std::string&, const float){};
     testListener.onIOStartCallback = [&](const std::string& fileName)
     {
         REQUIRE(false);
@@ -166,7 +167,7 @@ TEST_CASE("FileManager::saveFile()--saveSuccess", "[FileManager::saveFile()--sav
     
     
     TestFileManagerListener testListener;
-    
+    testListener.onProgressCallback = [](const std::string&, const float){};
     testListener.onIOStartCallback = [&](const std::string& fileName)
         {
             isSaveStarted = true;
@@ -226,8 +227,7 @@ TEST_CASE("FileManager::loadFile()--loadSuccess", "[FileManager::loadFile()--loa
     
     bool isCanStop = false;
     TestFileManagerListener testListener;
-    testListener.onProgressCallback = [](const std::string&, const size_t){};
-    
+    testListener.onProgressCallback = [](const std::string&, const size_t){};  
     testListener.onIOStartCallback = [&](const std::string& fileName)
     {
         isLoadStarted = true;
@@ -283,6 +283,7 @@ TEST_CASE("FileManager::pause()--pauseSuccess--loadFile", "[FileManager::pause()
     std::string initDataBuffer = "1234567";
     
     TestFileManagerListener testListener;
+    testListener.onProgressCallback = [](const std::string&, const float){};
     testListener.onIOStartCallback =
         [&](const std::string& filename)
         {
@@ -514,6 +515,7 @@ TEST_CASE("FileManager::saveFile()--ProgressValue", "[FileManager::saveFile()--P
             isContinueTest.store(true);
             condition.notify_one();
         };
+    testListener.onIOStartCallback = [](const std::string&){};
     
     TextEditorCore::FileManager fileManager;
     
@@ -574,6 +576,8 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
         { 
             REQUIRE(false);
         };
+    testListener.onIOStartCallback = [](const std::string&){};
+    testListener.onProgressCallback = [](const std::string&, const float){};
     
     TextEditorCore::FileManager fileManager;
     fileManager.setFilePath(initFileName);
@@ -615,6 +619,7 @@ TEST_CASE("FileManager::loadFile()--ProgressValue", "[FileManager::pause()--Prog
 TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError]")
 {
     TestFileManagerListener testListener;
+    testListener.onProgressCallback = [](const std::string&, const float){};
     testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
@@ -643,7 +648,8 @@ TEST_CASE("FileManager::pause()--pauseError", "[FileManager::pause()--pauseError
 TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeError]")
 {
     TestFileManagerListener testListener;
-        testListener.onProgressCallback = [&](const std::string&, const size_t progres)
+    testListener.onProgressCallback = [](const std::string&, const float){};
+    testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
         };
@@ -671,7 +677,8 @@ TEST_CASE("FileManager::resume()--resumeError", "[FileManager::resume()--resumeE
 TEST_CASE("FileManager::stopWork()--stopWorkError", "[FileManager::stopWork()--stopWorkError]")
 {
     TestFileManagerListener testListener;
-        testListener.onProgressCallback = [&](const std::string&, const size_t progres)
+    testListener.onProgressCallback = [](const std::string&, const float){};
+    testListener.onProgressCallback = [&](const std::string&, const size_t progres)
         {
             REQUIRE(false);
         };
