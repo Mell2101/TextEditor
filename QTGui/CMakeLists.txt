@@ -54,6 +54,8 @@ else()
     endif()
 endif()
 
+target_include_directories(TextEditorCoreLib PUBLIC include)
+
 target_link_libraries(QTGui
     PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     PRIVATE Qt${QT_VERSION_MAJOR}::PrintSupport

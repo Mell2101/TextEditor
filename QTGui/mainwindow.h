@@ -2,9 +2,9 @@
 
 #include <QMainWindow>
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+namespace TextEditorCore {
+    class Document;
+}
 
 class MainWindow : public QMainWindow
 {
@@ -12,10 +12,10 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() = default;
 
 public slots:
-    void openFontDialog();
+//    void openFontDialog();
     void openPrintDocumentDialog();
     void updateTextCursorPosInfo();
     void newFile();
@@ -23,11 +23,13 @@ public slots:
     void saveFile();
     void openAboutMessageBox();
     void exitProgramm();
+    void updateTextData(int pos, int removed, int added);
 
 private:
-    Ui::MainWindow *ui;
     class CustomTextEdit* m_pTextArea;
     class QLabel* m_pTextCursorPosInfo;
+    TextEditorCore::Document* m_pDocument;
+    size_t m_currentDocIndex = 0;
 
 private:
     void menuInit();
