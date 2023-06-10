@@ -10,7 +10,7 @@ class MainWindow : public QMainWindow, public TextEditorCore::IDocumentListener
 
 public:
     MainWindow(QWidget *parent = nullptr);
-    virtual ~MainWindow() = default;
+    ~MainWindow() = default;
 
 public slots:
 //    void openFontDialog();

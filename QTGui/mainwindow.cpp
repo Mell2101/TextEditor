@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     //  Working title
     setWindowTitle(tr("Mister Note Pad 2023 XLL ULTRA"));
+    resize(800, 600);
 
     m_pTextArea = new CustomTextEdit(this);
     setCentralWidget(m_pTextArea);
@@ -107,7 +108,9 @@ void MainWindow::onIOError(const size_t index, TextEditorCore::FileIOErrorsEnum 
                     QMessageBox::NoButton, this
                 ).exec();
         break;
-    default: break;
+    default:
+        qDebug() << error;
+        break;
     }
 }
 
@@ -121,6 +124,7 @@ void MainWindow::onStop(const size_t index) {}
 
 void MainWindow::onLoadComplete(const size_t index, std::string& dataBuffer)
 {
+    qDebug() << "Success";
     m_pTextArea->setText(QString::fromStdString(dataBuffer));
 }
 

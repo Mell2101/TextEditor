@@ -12,7 +12,7 @@ class IDocumentListener
         
         virtual void onCreated(const size_t index) = 0;
         virtual void onChanged(std::string& data) = 0;
-        virtual void onModifyError();
+        virtual void onModifyError() = 0;
         
         virtual void onStartLoading(const size_t index) = 0;
         virtual void onIOError(const size_t index, FileIOErrorsEnum) = 0;

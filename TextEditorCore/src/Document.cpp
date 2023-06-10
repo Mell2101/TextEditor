@@ -110,6 +110,7 @@ void Document::setListener(IDocumentListener& listener)
 void Document::setFileName(const std::string& fileName)
 {
     m_pImpl->m_fileName = fileName;
+    m_pImpl->m_fileManager.setFilePath(fileName);
 }
 
 void Document::setTextData(const std::string& textData)
