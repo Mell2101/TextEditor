@@ -1,6 +1,7 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
 #include "customtextedit.h"
+#include "qapplication.h"
+#include "qstatusbar.h"
 #include <QMenu>
 #include <QFontDialog>
 #include <QStyle>
@@ -11,14 +12,12 @@
 #include <QMessageBox>
 #include <QPrinter>
 #include <QPrintDialog>
-#include <QDebug>
+#include <QMenuBar>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    : QMainWindow(parent),
+      m_document(0)
 {
-    ui->setupUi(this);
-
     //  Working title
     setWindowTitle(tr("Mister Note Pad 2023 XLL ULTRA"));
 
@@ -28,20 +27,29 @@ MainWindow::MainWindow(QWidget *parent)
     menuInit();
     statusBarInit();
     toolBarInit();
+
+    m_document.setListener(*this);
+    connect(m_pTextArea->document(), &QTextDocument::contentsChange, this, &MainWindow::updateText);
 }
 
-MainWindow::~MainWindow()
+void MainWindow::updateText(int pos, int removed, int added)
 {
-    delete ui;
+    if (!m_contentsChanged)
+        m_contentsChanged = true;
+
+    if (removed > 0)
+        m_document.modifyText(pos, -removed, "");
+    else
+        m_document.modifyText(pos, added, m_pTextArea->toPlainText().mid(pos, added).toStdString());
 }
 
 // Demo
-void MainWindow::openFontDialog()
-{
-    QFontDialog fontDialog(this);
-    bool accept;
-    fontDialog.getFont(&accept);
-}
+//void MainWindow::openFontDialog()
+//{
+//    QFontDialog fontDialog(this);
+//    bool accept;
+//    fontDialog.getFont(&accept);
+//}
 
 void MainWindow::openPrintDocumentDialog()
 {
@@ -60,55 +68,107 @@ void MainWindow::updateTextCursorPosInfo()
     m_pTextCursorPosInfo->setText(QString("Line: %1, column: %2").arg(line).arg(column));
 }
 
+void MainWindow::onCreated(const size_t index) {}
+
+void MainWindow::onChanged(std::string& data) {}
+
+void MainWindow::onModifyError() {}
+
+void MainWindow::onStartLoading(const size_t index) {}
+
+void MainWindow::onIOError(const size_t index, TextEditorCore::FileIOErrorsEnum error)
+{
+    switch (error)
+    {
+    case TextEditorCore::FilePathIsEmpty:
+        QMessageBox
+                (
+                    QMessageBox::Critical,
+                    tr("File error"),
+                    tr("Cannot open a file: file path is empty"),
+                    QMessageBox::NoButton, this
+                ).exec();
+        break;
+    case TextEditorCore::FileWriteError:
+        QMessageBox
+                (
+                    QMessageBox::Critical,
+                    tr("File error"),
+                    tr("Cannot write to a file"),
+                    QMessageBox::NoButton, this
+                ).exec();
+        break;
+    case TextEditorCore::FileReadError:
+        QMessageBox
+                (
+                    QMessageBox::Critical,
+                    tr("File error"),
+                    tr("Cannot read a file"),
+                    QMessageBox::NoButton, this
+                ).exec();
+        break;
+    default: break;
+    }
+}
+
+void MainWindow::onProgress(const size_t index, const float percent) {}
+
+void MainWindow::onPause(const size_t index) {}
+
+void MainWindow::onResume(const size_t index) {}
+
+void MainWindow::onStop(const size_t index) {}
+
+void MainWindow::onLoadComplete(const size_t index, std::string& dataBuffer)
+{
+    m_pTextArea->setText(QString::fromStdString(dataBuffer));
+}
+
+void MainWindow::onSaveComplete(const size_t index)
+{
+    QMessageBox
+            (
+                QMessageBox::Information,
+                tr("Success"),
+                tr("File saved"),
+                QMessageBox::NoButton,
+                this
+            ).exec();
+}
+
 void MainWindow::newFile()
 {
-    qDebug() << "\"New file\" triggered";
+    if (m_contentsChanged)
+    {
+        QMessageBox messageBox
+                (
+                    QMessageBox::Warning,
+                    tr("Unsaved changes"),
+                    tr("Would you like to save changes?"),
+                    QMessageBox::StandardButtons(),
+                    this
+                );
+
+        if (messageBox.exec() == QMessageBox::Accepted)
+            saveFile();
+    }
+
+    m_pTextArea->clear();
+    m_document.setTextData("");
 }
 
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
-    if (!fileName.isEmpty())
-    {
-        qDebug() << "\"Open file\" triggered, file name is " << fileName;
-
-        // TODO: checking for file opening via file name path, stored in fileName
-        if (true)
-        {
-            QMessageBox
-                    (
-                        QMessageBox::Critical,
-                        tr("File error"),
-                        tr("Cannot open a file"),
-                        QMessageBox::NoButton, this
-                    ).exec();
-        }
-        else
-            qDebug() << "File opened";
-    }
+    m_document.setFileName(fileName.toStdString());
+    m_document.load();
 }
 
 void MainWindow::saveFile()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
-    if (!fileName.isEmpty())
-    {
-        qDebug() << "\"Save file\" triggered, file name is " << fileName;
-
-        // TODO: checking for file opening via file name path, stored in fileName
-        if (true)
-        {
-            QMessageBox
-                    (
-                        QMessageBox::Critical,
-                        tr("File error"),
-                        tr("Cannot save a file"),
-                        QMessageBox::NoButton, this
-                    ).exec();
-        }
-        else
-            qDebug() << "File saved";
-    }
+    m_document.setFileName(fileName.toStdString());
+    m_document.save(true);
 }
 
 void MainWindow::openAboutMessageBox()
@@ -132,6 +192,23 @@ void MainWindow::openAboutMessageBox()
 
 void MainWindow::exitProgramm()
 {
+    if (m_contentsChanged)
+    {
+        if (m_contentsChanged)
+        {
+            QMessageBox messageBox
+                    (
+                        QMessageBox::Warning,
+                        tr("Unsaved changes"),
+                        tr("Would you like to save changes?"),
+                        QMessageBox::StandardButtons(),
+                        this
+                    );
+
+            if (messageBox.exec() == QMessageBox::Accepted)
+                saveFile();
+        }
+    }
     exit(0);
 }
 
@@ -153,7 +230,6 @@ inline void MainWindow::menuInit()
     editMenu->addAction(tr("Cut"), m_pTextArea, &CustomTextEdit::cut, QKeySequence(tr("Ctrl+X")));
     editMenu->addAction(tr("Copy"), m_pTextArea, &CustomTextEdit::copy, QKeySequence(tr("Ctrl+C")));
     editMenu->addAction(tr("Paste"), m_pTextArea, &CustomTextEdit::paste, QKeySequence(tr("Ctrl+V")));
-    editMenu->addAction(tr("Fonts..."), this, &MainWindow::openFontDialog, QKeySequence(tr("Ctrl+Shift+F")));
 
     QMenu* helpMenu = menuBar()->addMenu(tr("Help"));
     helpMenu->addAction(tr("About..."), this, &MainWindow::openAboutMessageBox);
@@ -170,7 +246,13 @@ inline void MainWindow::statusBarInit()
 inline void MainWindow::toolBarInit()
 {
     QToolBar* toolBarFile = addToolBar(tr("File"));
-    toolBarFile->addAction(QIcon("://icons/document-new.svg"), tr("New"));
+    toolBarFile->addAction
+            (
+                QIcon("://icons/document-new.svg"),
+                tr("New"),
+                this,
+                &MainWindow::newFile
+            );
     toolBarFile->addAction
             (
                 QIcon("://icons/document-open.svg"),
@@ -229,12 +311,12 @@ inline void MainWindow::toolBarInit()
                 m_pTextArea,
                 &CustomTextEdit::paste
             );
-    toolBarEdit->addSeparator();
-    toolBarEdit->addAction
-            (
-                QIcon("://icons/applications-fonts.svg"),
-                tr("Fonts..."),
-                this,
-                &MainWindow::openFontDialog
-            );
+//    toolBarEdit->addSeparator();
+//    toolBarEdit->addAction
+//            (
+//                QIcon("://icons/applications-fonts.svg"),
+//                tr("Fonts..."),
+//                this,
+//                &MainWindow::openFontDialog
+//            );
 }
