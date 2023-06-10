@@ -21,6 +21,7 @@ struct Document::PImpl : public IFileIOListener
     }
     void save(const bool isRewrite)
     {
+        m_fileManager.setDataBuffer(m_textManager.getTextData());
         m_fileManager.saveFile(isRewrite);
     }
     void stop()
@@ -115,7 +116,7 @@ void Document::setFileName(const std::string& fileName)
 
 void Document::setTextData(const std::string& textData)
 {
-    
+    m_pImpl->m_textManager.setTextData(textData);
 }
 
 std::string& Document::getTextData()

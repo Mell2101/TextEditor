@@ -13,6 +13,7 @@
 #include <QPrinter>
 #include <QPrintDialog>
 #include <QMenuBar>
+#include <qdebug.h>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
