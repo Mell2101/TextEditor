@@ -17,10 +17,12 @@ struct Document::PImpl : public IFileIOListener
     
     void load()
     {
+        m_fileManager.setDataBuffer(m_textManager.getTextData());
         m_fileManager.loadFile();
     }
     void save(const bool isRewrite)
     {
+        m_fileManager.setDataBuffer(m_textManager.getTextData());
         m_fileManager.saveFile(isRewrite);
     }
     void stop()
@@ -112,14 +114,18 @@ void Document::setFileName(const std::string& fileName)
     m_pImpl->m_fileName = fileName;
 }
 
-void Document::setTextData(const std::string& textData)
-{
-    
-}
-
 std::string& Document::getTextData()
 {
     return m_pImpl->m_textManager.getTextData();
+}
+
+void Document::setText(const std::string& text)
+{
+    m_pImpl->m_textManager.replaceAll(text);
+    if (m_pImpl->m_listener)
+    {
+        m_pImpl->m_listener->onChanged(m_pImpl->m_index, m_pImpl->m_textManager.getTextData());
+    }
 }
 
 void Document::modifyText(size_t pos, size_t length, const std::string& data)
@@ -128,7 +134,7 @@ void Document::modifyText(size_t pos, size_t length, const std::string& data)
     {
         if (m_pImpl->m_listener)
         {
-            m_pImpl->m_listener->onModifyError();
+            m_pImpl->m_listener->onModifyError(m_pImpl->m_index);
         }
         return;
     }
@@ -137,14 +143,14 @@ void Document::modifyText(size_t pos, size_t length, const std::string& data)
     {
         if (m_pImpl->m_listener)
         {
-            m_pImpl->m_listener->onModifyError();
+            m_pImpl->m_listener->onModifyError(m_pImpl->m_index);
         }
         return;
     }
     
     if (m_pImpl->m_listener)
     {
-        m_pImpl->m_listener->onChanged(m_pImpl->m_textManager.getTextData());
+        m_pImpl->m_listener->onChanged(m_pImpl->m_index, m_pImpl->m_textManager.getTextData());
     }
 }
 
