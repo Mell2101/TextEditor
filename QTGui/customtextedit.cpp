@@ -25,3 +25,4 @@ void CustomTextEdit::onLoaded(const QString& data)
 {
     setPlainText(data);
 }
+

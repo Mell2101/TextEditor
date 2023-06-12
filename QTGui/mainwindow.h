@@ -22,20 +22,25 @@ public slots:
     void openAboutMessageBox();
     void exitProgramm();
     void updateText(int pos, int removed, int added);
+    void onSaved();
+    void onTextChanged();
 
 signals:
     void loadComplete(const QString& data);
+    void saveComplete();
 
 private:
     class CustomTextEdit* m_pTextArea;
     class QLabel* m_pTextCursorPosInfo;
     TextEditorCore::Document m_document;
     bool m_contentsChanged = false;
+    bool m_newContent = true;
 
 private:
     void menuInit();
     void statusBarInit();
     void toolBarInit();
+    void closeEvent(QCloseEvent* event) override;
 
 // IDocumentListener override
 private:

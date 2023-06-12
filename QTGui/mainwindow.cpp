@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "customtextedit.h"
 #include "qapplication.h"
+#include "qevent.h"
 #include "qstatusbar.h"
 #include <QMenu>
 #include <QFontDialog>
@@ -31,17 +32,14 @@ MainWindow::MainWindow(QWidget *parent)
     toolBarInit();
     
     m_document.setListener(*this);
-    connect(m_pTextArea->document(), &QTextDocument::contentsChange, this, &MainWindow::updateText);
     connect(this, &MainWindow::loadComplete, m_pTextArea, &CustomTextEdit::onLoaded);
+    connect(this, &MainWindow::saveComplete, this, &MainWindow::onSaved);
+    connect(m_pTextArea->document(), &QTextDocument::contentsChange, this, &MainWindow::updateText);
+    connect(m_pTextArea, &CustomTextEdit::textChanged, this, &MainWindow::onTextChanged);
 }
 
 void MainWindow::updateText(int pos, int removed, int added)
 {
-    if (!m_contentsChanged)
-    {
-        m_contentsChanged = true;
-    }
-    
     if (removed > 0)
     {
         m_document.modifyText(pos, -removed, "");
@@ -49,6 +47,36 @@ void MainWindow::updateText(int pos, int removed, int added)
     else
     {
         m_document.modifyText(pos, added, m_pTextArea->toPlainText().mid(pos, added).toStdString());
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    if (m_contentsChanged)
+    {
+        QMessageBox messageBox
+                (
+                    QMessageBox::Warning,
+                    tr("Unsaved changes"),
+                    tr("Would you like to save changes?"),
+                    QMessageBox::Yes | QMessageBox::Cancel | QMessageBox::No,
+                    this
+                );
+
+        int result = messageBox.exec();
+
+        switch (result)
+        {
+        case QMessageBox::Yes:
+            saveFile();
+            event->accept();
+            break;
+        case QMessageBox::No:
+            event->accept();
+            break;
+        default:
+            event->ignore();
+        }
     }
 }
 
@@ -118,9 +146,7 @@ void MainWindow::onIOError(const size_t index, TextEditorCore::FileIOErrorsEnum 
                     QMessageBox::NoButton, this
                 ).exec();
         break;
-    default:
-        qDebug() << error;
-        break;
+    default:;
     }
 }
 
@@ -136,18 +162,39 @@ void MainWindow::onLoadComplete(const size_t index, std::string& dataBuffer)
 {
     qDebug() << "Success";
     emit loadComplete(dataBuffer.c_str());
+    m_newContent = true;
+    m_contentsChanged = false;
 }
 
 void MainWindow::onSaveComplete(const size_t index)
 {
-    QMessageBox
+    emit saveComplete();
+    m_contentsChanged = false;
+}
+
+
+void MainWindow::onSaved()
+{
+    QMessageBox messageBox
             (
                 QMessageBox::Information,
                 tr("Success"),
-                tr("File saved"),
+                tr("File saved                  "),
                 QMessageBox::NoButton,
                 this
-            ).exec();
+            );
+
+    messageBox.exec();
+}
+
+void MainWindow::onTextChanged()
+{
+    if (m_newContent)
+    {
+        m_newContent = false;
+        return;
+    }
+    m_contentsChanged = true;
 }
 
 void MainWindow::newFile()
@@ -156,27 +203,38 @@ void MainWindow::newFile()
     {
         QMessageBox messageBox
                 (
-                    QMessageBox::Information,
+                    QMessageBox::Warning,
                     tr("Unsaved changes"),
                     tr("Would you like to save changes?"),
-                    QMessageBox::Yes|QMessageBox::No,
+                    QMessageBox::Yes | QMessageBox::Cancel | QMessageBox::No,
                     this
                 );
         
-        if (messageBox.exec() == QMessageBox::Yes)
+        int result = messageBox.exec();
+
+        switch (result)
         {
+        case QMessageBox::Yes:
             saveFile();
+            m_pTextArea->clear();
+            m_document.setText("");
+            m_newContent = true;
+            m_contentsChanged = false;
+            break;
+        case QMessageBox::No:
+            m_pTextArea->clear();
+            m_document.setText("");
+            m_newContent = true;
+            m_contentsChanged = false;
+            break;
+        default:;
         }
     }
-    
-    m_pTextArea->clear();
-    m_document.setText("");
 }
 
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
-    std::string str = fileName.toStdString();
     m_document.setFileName(fileName.toStdString());
     m_document.load();
 }
@@ -209,26 +267,7 @@ void MainWindow::openAboutMessageBox()
 
 void MainWindow::exitProgramm()
 {
-    if (m_contentsChanged)
-    {
-        if (m_contentsChanged)
-        {
-            QMessageBox messageBox
-                    (
-                        QMessageBox::Warning,
-                        tr("Unsaved changes"),
-                        tr("Would you like to save changes?"),
-                        QMessageBox::StandardButtons(),
-                        this
-                    );
-            
-            if (messageBox.exec() == QMessageBox::Accepted)
-            {
-                saveFile();
-            }
-        }
-    }
-    exit(0);
+    close();
 }
 
 inline void MainWindow::menuInit()
