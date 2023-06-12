@@ -22,6 +22,7 @@ add_executable(TextEditorCoreTests
     
     TextManagerTests.cpp
     FileManagerTests.cpp
+    DocumentTests.cpp
 )
 
 

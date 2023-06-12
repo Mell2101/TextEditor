@@ -28,8 +28,8 @@ class Document
         void setListener(IDocumentListener& listener);
         void setFileName(const std::string& fileName);
         
-        void setTextData(const std::string& textData);
         std::string& getTextData();
+        void setText(const std::string& text);
         void modifyText(size_t pos, size_t length, const std::string& data);
         
         void load();
