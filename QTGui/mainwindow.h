@@ -22,6 +22,7 @@ public slots:
     void openAboutMessageBox();
     void exitProgramm();
     void updateText(int pos, int removed, int added);
+    void onSaved();
 
 signals:
     void loadComplete(const QString& data);

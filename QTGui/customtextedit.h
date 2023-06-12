@@ -10,7 +10,6 @@ public:
 
 public slots:
     void onLoaded(const QString& data);
-    void onSaved();
 
 protected:
     QMenu* m_pContextMenu;
