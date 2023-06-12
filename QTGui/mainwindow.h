@@ -36,6 +36,7 @@ private:
     void menuInit();
     void statusBarInit();
     void toolBarInit();
+    void closeEvent(QCloseEvent* event) override;
 
 // IDocumentListener override
 private:
