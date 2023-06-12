@@ -23,6 +23,9 @@ public slots:
     void exitProgramm();
     void updateText(int pos, int removed, int added);
 
+signals:
+    void loadComplete(const QString& data);
+
 private:
     class CustomTextEdit* m_pTextArea;
     class QLabel* m_pTextCursorPosInfo;
@@ -37,9 +40,9 @@ private:
 // IDocumentListener override
 private:
     virtual void onCreated(const size_t index) override;
-    virtual void onChanged(std::string& data) override;
-    virtual void onModifyError() override;
-
+    virtual void onChanged(const size_t index, std::string& data) override;
+    virtual void onModifyError(const size_t index) override;
+    
     virtual void onStartLoading(const size_t index) override;
     virtual void onIOError(const size_t index, TextEditorCore::FileIOErrorsEnum) override;
     virtual void onProgress(const size_t index, const float percent) override;

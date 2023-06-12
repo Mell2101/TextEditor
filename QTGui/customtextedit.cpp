@@ -5,7 +5,7 @@
 CustomTextEdit::CustomTextEdit(QWidget* parent) : QTextEdit(parent)
 {
     m_pContextMenu = new QMenu(this);
-
+    
     connect(m_pContextMenu->addAction(tr("Undo")), &QAction::triggered, this, &CustomTextEdit::undo);
     connect(m_pContextMenu->addAction(tr("Redo")), &QAction::triggered, this, &CustomTextEdit::redo);
     connect(m_pContextMenu->addAction(tr("Cut")), &QAction::triggered, this, &CustomTextEdit::cut);
@@ -16,5 +16,12 @@ CustomTextEdit::CustomTextEdit(QWidget* parent) : QTextEdit(parent)
 void CustomTextEdit::contextMenuEvent(QContextMenuEvent *event)
 {
     if (event)
+    {
         m_pContextMenu->exec(event->globalPos());
+    }
+}
+
+void CustomTextEdit::onLoaded(const QString& data)
+{
+    setPlainText(data);
 }

@@ -15,6 +15,11 @@ struct Document::PImpl : public IFileIOListener
     
     IDocumentListener* m_listener;
     
+    PImpl()
+    {
+        m_fileManager.setListener(this);
+    }
+    
     void load()
     {
         m_fileManager.setDataBuffer(m_textManager.getTextData());
