@@ -23,6 +23,7 @@ public slots:
     void exitProgramm();
     void updateText(int pos, int removed, int added);
     void onSaved();
+    void onTextChanged();
 
 signals:
     void loadComplete(const QString& data);
@@ -33,6 +34,7 @@ private:
     class QLabel* m_pTextCursorPosInfo;
     TextEditorCore::Document m_document;
     bool m_contentsChanged = false;
+    bool m_newContent = true;
 
 private:
     void menuInit();

@@ -35,13 +35,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(this, &MainWindow::loadComplete, m_pTextArea, &CustomTextEdit::onLoaded);
     connect(this, &MainWindow::saveComplete, this, &MainWindow::onSaved);
     connect(m_pTextArea->document(), &QTextDocument::contentsChange, this, &MainWindow::updateText);
+    connect(m_pTextArea, &CustomTextEdit::textChanged, this, &MainWindow::onTextChanged);
 }
 
 void MainWindow::updateText(int pos, int removed, int added)
 {
-    if (!m_contentsChanged)
-        m_contentsChanged = true;
-
     if (removed > 0)
     {
         m_document.modifyText(pos, -removed, "");
@@ -164,6 +162,7 @@ void MainWindow::onLoadComplete(const size_t index, std::string& dataBuffer)
 {
     qDebug() << "Success";
     emit loadComplete(dataBuffer.c_str());
+    m_newContent = true;
     m_contentsChanged = false;
 }
 
@@ -188,6 +187,16 @@ void MainWindow::onSaved()
     messageBox.exec();
 }
 
+void MainWindow::onTextChanged()
+{
+    if (m_newContent)
+    {
+        m_newContent = false;
+        return;
+    }
+    m_contentsChanged = true;
+}
+
 void MainWindow::newFile()
 {
     if (m_contentsChanged)
@@ -209,11 +218,13 @@ void MainWindow::newFile()
             saveFile();
             m_pTextArea->clear();
             m_document.setText("");
+            m_newContent = true;
             m_contentsChanged = false;
             break;
         case QMessageBox::No:
             m_pTextArea->clear();
             m_document.setText("");
+            m_newContent = true;
             m_contentsChanged = false;
             break;
         default:;
