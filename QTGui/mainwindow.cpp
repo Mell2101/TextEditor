@@ -235,10 +235,6 @@ void MainWindow::newFile()
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
-    if (fileName.isEmpty())
-    {
-        return;
-    }
     m_document.setFileName(fileName.toStdString());
     m_document.load();
 }
@@ -246,10 +242,6 @@ void MainWindow::openFile()
 void MainWindow::saveFile()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save document"), QDir::homePath(), tr("Text(*.txt);;All(*)"));
-    if (fileName.isEmpty())
-    {
-        return;
-    }
     m_document.setFileName(fileName.toStdString());
     m_document.save(true);
 }
