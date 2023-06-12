@@ -33,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     m_document.setListener(*this);
     connect(this, &MainWindow::loadComplete, m_pTextArea, &CustomTextEdit::onLoaded);
+    connect(this, &MainWindow::saveComplete, m_pTextArea, &CustomTextEdit::onSaved);
     connect(m_pTextArea->document(), &QTextDocument::contentsChange, this, &MainWindow::updateText);
 }
 
@@ -168,17 +169,7 @@ void MainWindow::onLoadComplete(const size_t index, std::string& dataBuffer)
 
 void MainWindow::onSaveComplete(const size_t index)
 {
-    QMessageBox messageBox
-            (
-                QMessageBox::Information,
-                tr("Success"),
-                tr("File saved                  "),
-                QMessageBox::NoButton,
-                this
-            );
-
-    messageBox.exec();
-
+    emit saveComplete();
     m_contentsChanged = false;
 }
 

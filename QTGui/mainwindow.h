@@ -25,6 +25,7 @@ public slots:
 
 signals:
     void loadComplete(const QString& data);
+    void saveComplete();
 
 private:
     class CustomTextEdit* m_pTextArea;

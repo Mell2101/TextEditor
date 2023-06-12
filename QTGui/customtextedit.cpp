@@ -1,4 +1,5 @@
 #include "customtextedit.h"
+#include "qmessagebox.h"
 #include <QMenu>
 #include <QContextMenuEvent>
 
@@ -24,4 +25,18 @@ void CustomTextEdit::contextMenuEvent(QContextMenuEvent *event)
 void CustomTextEdit::onLoaded(const QString& data)
 {
     setPlainText(data);
+}
+
+void CustomTextEdit::onSaved()
+{
+    QMessageBox messageBox
+            (
+                QMessageBox::Information,
+                tr("Success"),
+                tr("File saved                  "),
+                QMessageBox::NoButton,
+                this
+            );
+
+    messageBox.exec();
 }
