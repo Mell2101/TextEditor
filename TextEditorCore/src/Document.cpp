@@ -15,6 +15,11 @@ struct Document::PImpl : public IFileIOListener
     
     IDocumentListener* m_listener;
     
+    PImpl()
+    {
+        m_fileManager.setListener(this);
+    }
+    
     void load()
     {
         m_fileManager.setDataBuffer(m_textManager.getTextData());
@@ -112,6 +117,7 @@ void Document::setListener(IDocumentListener& listener)
 void Document::setFileName(const std::string& fileName)
 {
     m_pImpl->m_fileName = fileName;
+    m_pImpl->m_fileManager.setFilePath(fileName);
 }
 
 std::string& Document::getTextData()

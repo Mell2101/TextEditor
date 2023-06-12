@@ -114,13 +114,12 @@ TEST_CASE("FileManager::saveFile()--FileUnavailable", "[FileManager::saveFile()-
     // std::string dataBuffer = "1234676";
     // std::condition_variable condition;
     
-    // std::filesystem::remove_all(initFileName);
-    // // std::ifstream fileHolder(initFileName);
-    // // if (fileHolder.is_open())
-    // // {
-    // //     REQUIRE(false);
-    // //     return;
-    // // }
+    // std::ifstream fileHolder(initFileName);
+    // if (!fileHolder.is_open())
+    // {
+    //     REQUIRE(false);
+    //     return;
+    // }
     
     // bool canStop = false;
     // TextEditorCore::FileManager fileManager;

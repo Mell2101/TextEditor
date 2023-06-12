@@ -8,6 +8,9 @@ class CustomTextEdit : public  QTextEdit
 public:
     CustomTextEdit(QWidget* parent);
 
+public slots:
+    void onLoaded(const QString& data);
+
 protected:
     QMenu* m_pContextMenu;
 
